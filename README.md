@@ -75,7 +75,6 @@ CI/CD Workflow 定義：
 4. 開啟 Pull Request
 
 **注意**：
-- 所有 commit 的 author 必須使用 `thepagent <thepagent@users.noreply.github.com>`
 - Commit message 格式：`type: description`（如 `feat:`, `fix:`, `docs:`, `refactor:`）
 - 在 PR description 中加入 `Fixes: #issue_number`（若為 issue 修復）
 
