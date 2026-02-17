@@ -1,0 +1,25 @@
+name: Block Forbidden Files
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check for forbidden files
+        run: |
+          FORBIDDEN="MEMORY.md IDENTITY.md SOUL.md"
+          FOUND=""
+          for f in $FORBIDDEN; do
+            if git diff --name-only origin/main...HEAD | grep -qx "$f"; then
+              FOUND="$FOUND $f"
+            fi
+          done
+          if [ -n "$FOUND" ]; then
+            echo "::error::Forbidden files detected:$FOUND"
+            exit 1
+          fi
