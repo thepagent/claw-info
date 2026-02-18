@@ -15,7 +15,8 @@ claw-info/
 │   ├── nodes.md                   # OpenClaw Nodes 管理與配置
 │   ├── pricing_howto.md           # 定價策略與實作
 │   ├── profile_rotation.md        # 同一 Provider 的 Auth Profiles 輪換（Rotation / Failover）
-│   └── sandbox.md                 # Sandbox 環境配置
+│   ├── sandbox.md                 # Sandbox 環境配置
+│   └── webhook.md                 # Webhook（Cron delivery webhook）
 ├── release-notes/
 │   ├── 2026-02-14.md              # 2026-02-14 發佈記錄
 │   ├── 2026-02-15.md              # 2026-02-15 發佈記錄
@@ -35,6 +36,7 @@ claw-info/
 - **nodes.md** - OpenClaw Nodes 管理與配置
 - **pricing_howto.md** - 定價策略與實作
 - **sandbox.md** - Sandbox 環境配置
+- **webhook.md** - Webhook（Cron delivery webhook）
 
 ### release-notes/
 發佈記錄與規範：
