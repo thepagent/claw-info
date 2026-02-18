@@ -10,6 +10,43 @@
 
 ---
 
+## 一張圖看懂：rotation（同 provider profiles）→ fallback（跨 models）
+
+```text
+Request
+  |
+  v
+Pick model (primary)
+  |
+  v
+Pick provider auth profile (sticky per session)
+  |
+  v
+Call provider with chosen profile
+  |
+  +--> Success ----------------------------------------------> done
+  |
+  +--> Error:
+        |
+        +--> Rate limit / timeout
+        |      -> mark profile COOLDOWN (short)
+        |      -> try next profile (round-robin; skip cooldown/disabled)
+        |
+        +--> Out of quota / credits / billing
+        |      -> mark profile DISABLED (long)
+        |      -> try next profile (round-robin; skip disabled)
+        |
+        +--> Auth error
+               -> try next profile (or require re-login)
+
+If all profiles in the provider are unavailable
+  |
+  v
+Model fallback -> next model in agents.defaults.model.fallbacks
+```
+
+---
+
 ## 名詞速覽
 
 - **Provider**：模型供應商/驅動，例如 `openai-codex`、`anthropic`。
