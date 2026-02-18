@@ -16,9 +16,10 @@ jobs:
     steps:
       - uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # GITHUB_TOKEN cannot approve user-created PRs; use a PAT stored as AUTO_APPROVE_TOKEN.
+          github-token: ${{ secrets.AUTO_APPROVE_TOKEN }}
           script: |
-            const prNumber = github.event.workflow_run.pull_requests?.[0]?.number;
+            const prNumber = context.payload.workflow_run?.pull_requests?.[0]?.number;
             
             if (!prNumber) {
               console.log('No PR found in workflow_run');
