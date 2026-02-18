@@ -97,6 +97,11 @@ OpenClaw 支援在特定工作完成後，將結果以 **HTTP webhook** 形式�
 - `sessionTarget: "main"` **必須**搭配 `payload.kind: "systemEvent"`
 - `sessionTarget: "isolated"` **必須**搭配 `payload.kind: "agentTurn"`
 
+### Delivery 支援範圍
+
+- 一般情況下，`delivery`（包含 `announce` / `webhook`）主要用於 **isolated** 的 cron job run 結果投遞。
+- 若你發現 `main` session 的 job 無法使用 `delivery`，請以 cron schema/版本行為為準。
+
 ---
 
 ## 使用範例
@@ -140,6 +145,19 @@ OpenClaw 支援在特定工作完成後，將結果以 **HTTP webhook** 形式�
 
 ---
 
+## 限制與最佳實踐
+
+| 項目 | 限制 | 建議 |
+|------|------|------|
+| 網路可達性 | Gateway 必須能連到你的 endpoint（DNS/防火牆/NAT 皆可能造成失敗） | 優先使用公網 HTTPS endpoint，必要時透過反向代理或 tunnel |
+| 回應時間 | Endpoint 過慢可能導致投遞 timeout 或失敗 | 立即回 `2xx`，耗時處理丟背景任務 |
+| Payload schema | JSON 欄位可能隨版本演進 | 完整記錄原始 JSON，只抽取必要欄位 |
+| 重送/重複事件 | 事件可能重送或重複投遞 | 以 `(jobId, runId)` 或等價 key 做冪等去重 |
+| 安全性 | 未驗證來源容易被偽造呼叫 | 使用 token/header 驗證；必要時限制 IP/加 WAF |
+| 可觀測性 | 只看 OpenClaw 端不易定位問題 | 接收端保留 request log（含時間、狀態碼、body hash） |
+
+---
+
 ## 最小接收端範例（Node.js / Express）
 
 ```js
@@ -168,6 +186,34 @@ app.listen(3000, () => console.log("listening on :3000"));
 ### Q2：如何避免同一個 run 重複觸發造成重複處理？
 
 **A：**接收端請以 `(jobId, runId)` 做去重（冪等），重複事件直接忽略。
+
+### Q3：Webhook endpoint 需要回傳什麼？
+
+**A：**建議回 `2xx`（例如 200/204）且盡量快速回應。若接收端需要做耗時處理，請改為先入 queue/背景任務。
+
+---
+
+## 已知問題（Open Issues）
+
+> 本節用於彙整 webhook delivery 相關的已知問題與需求。若你遇到可重現的狀況，建議在 OpenClaw 或 claw-info 另開 issue 並補上連結。
+
+### 🔴 Bugs
+
+| Issue | 標題 | 說明 |
+|-------|------|------|
+|（待補）|（待補）|（待補）|
+
+### 🟢 Feature Requests
+
+| Issue | 標題 | 說明 |
+|-------|------|------|
+|（待補）|（待補）|（待補）|
+
+---
+
+## 更新紀錄
+
+- **2026-02-18**：文件建立；新增「限制與最佳實踐 / 已知問題」章節
 
 ---
 
