@@ -201,13 +201,16 @@ app.listen(3000, () => console.log("listening on :3000"));
 
 | Issue | 標題 | 說明 |
 |-------|------|------|
-|（待補）|（待補）|（待補）|
+| [#19154](https://github.com/openclaw/openclaw/issues/19154) | Cron lastStatus: "ok" 掩蓋 delivery 失敗 | Agent 執行成功但投遞失敗時，狀態仍顯示 ok，難以監控與告警 |
+| [#17905](https://github.com/openclaw/openclaw/issues/17905) | Cron delivery / 排程多項問題彙整 | 包含 channel 解析、非預設 agent、靜默失敗等問題的彙整追蹤 |
 
 ### 🟢 Feature Requests
 
 | Issue | 標題 | 說明 |
 |-------|------|------|
-|（待補）|（待補）|（待補）|
+| [#9465](https://github.com/openclaw/openclaw/issues/9465) | Cron Job Hooks System | 需求：提供 Cron job hooks/事件系統（完成/失敗等）以便整合外部流程 |
+| [#19169](https://github.com/openclaw/openclaw/issues/19169) | Auto-cleanup for cron job sessions | 需求：cron job 執行後自動清理/回收 session，避免長期累積 |
+| [#7952](https://github.com/openclaw/openclaw/issues/7952) | Allow specifying agentId in webhook | 需求：在 webhook hook 類型中允許指定 agentId（提升可控性） |
 
 ---
 
