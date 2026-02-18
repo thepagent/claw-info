@@ -60,22 +60,35 @@ OpenClaw 為了提高快取命中與避免不必要的抖動，會對每個 sess
 
 ## 什麼錯誤會觸發輪換？
 
-通常包含：
+同一 provider 內，當「目前選中的 profile」在一次呼叫中失敗時，OpenClaw 會嘗試下一個 profile（rotation / failover）。常見會觸發輪換的錯誤類型如下：
 
 - **Rate limit**（速率限制）
-- **Timeout / 類似速率限制的超時**
+  - 通常視為「暫時性」：會進入 **cooldown**，並輪換到下一個 profile。
+- **Timeout / 連線錯誤 / 類似速率限制的超時**
+  - 通常也視為「暫時性」：會進入 **cooldown**，並輪換到下一個 profile。
 - **Authentication errors**（憑證失效/過期）
+  - 可能會被視為需要重新登入/授權；在可輪換的前提下，會嘗試下一個 profile。
+- **Out of quota / credits 不足 / 計費（billing）類錯誤**
+  - 通常視為「非暫時性」：會把該 profile 標記為 **disabled**（較長退避），在 disabled 期間 **round-robin 會跳過它**，改用下一個可用 profile。
 
-當某個 profile 被判定失敗，OpenClaw 會將其標記為冷卻一段時間，並嘗試下一個 profile。
+> 重點：OpenClaw 會先在同一 provider 的 profiles 之間輪換；只有當該 provider 的 profiles 都不可用時，才會進入 model fallback（`agents.defaults.model.fallbacks`）。
 
 ---
 
 ## 冷卻（Cooldown）與禁用（Disabled）
 
-- **Cooldown（短期退避）**：常見於暫時性的錯誤（rate limit/timeout）。通常採用指數退避（例如 1m → 5m → 25m → 1h）。
-- **Disabled（較長退避）**：常見於「額度/計費」類錯誤（例如 credits 不足）。因為可能不是暫時性，會給更長的禁用時間（例如數小時到 24h）。
+OpenClaw 會把 profile 的「暫時性失敗」與「看起來不會自己恢復的失敗」分開處理，以便 rotation 更穩定。
 
-這些狀態通常會記錄回 `auth-profiles.json` 的 `usageStats` 區塊。
+- **Cooldown（短期退避）**：常見於暫時性的錯誤（rate limit / timeout / 網路抖動）。
+  - 通常採用指數退避（例如：`1m → 5m → 25m → 1h`）。
+  - 在 cooldown 期間，該 profile 會被視為「暫時不可用」，rotation 會優先嘗試其他 profile。
+
+- **Disabled（較長退避）**：常見於「額度/計費（billing）」類錯誤（例如 out of quota、credits 不足）。
+  - 因為很可能不是短時間內會恢復，OpenClaw 會把該 profile 標記為 **disabled**（不是短暫 cooldown）。
+  - disabled 的退避時間通常更長（常見為**數小時**，最長可能到 **24h**）。
+  - 在 disabled 期間，該 profile 會被 **round-robin 直接跳過**，避免每次都撞到同一個「已耗盡額度」的帳號。
+
+這些狀態通常會記錄回 `auth-profiles.json` 的 `usageStats`（或相鄰的狀態欄位）中，供後續選擇順序與健康判斷使用。
 
 ---
 
