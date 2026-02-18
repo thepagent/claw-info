@@ -229,7 +229,8 @@ openclaw sandbox recreate --all
 
 | Issue | 狀態 | 說明 |
 |-------|------|------|
-| [#4807](https://github.com/openclaw/openclaw/issues/4807) | `not_planned` | sandbox-setup.sh 未包含在 npm 包中 |
+| [#4689](https://github.com/openclaw/openclaw/issues/4689) | 關閉 | sandbox.mode=off 時 exec 仍預設進 sandbox |
+| [#4807](https://github.com/openclaw/openclaw/issues/4807) | `not_planned`（已關閉） | sandbox-setup.sh 未包含在 npm 包中 |
 | [#5255](https://github.com/openclaw/openclaw/issues/5255) | 關閉 | browser file upload API 缺少路徑驗證 |
 
 ### 🔧 Workarounds
@@ -290,8 +291,6 @@ read: /workspace/data/input.txt
 
 | Issue | 標題 | 說明 |
 |-------|------|------|
-| [#4689](https://github.com/openclaw/openclaw/issues/4689) | exec host defaults to 'sandbox' even when sandbox.mode is 'off' | sandbox.mode=off 時 exec 仍預設進 sandbox |
-| [#4807](https://github.com/openclaw/openclaw/issues/4807) | Sandbox setup script missing from npm package | npm 安裝缺少 sandbox-setup.sh |
 | [#9348](https://github.com/openclaw/openclaw/issues/9348) | write tool restriction inconsistent with exec tool | write 和 exec 路徑限制不一致 |
 | [#13276](https://github.com/openclaw/openclaw/issues/13276) | slugifySessionKey truncates phone numbers | 容器名稱截斷電話號碼 |
 | [#16382](https://github.com/openclaw/openclaw/issues/16382) | Discord attachments impossible from sandboxed agents | Sandbox 內無法發送 Discord 附件 |
