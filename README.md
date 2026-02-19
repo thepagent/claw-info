@@ -62,7 +62,7 @@ CI/CD Workflow 定義：
 ## 📂 相關連結
 
 - [OpenClaw 官方倉庫](https://github.com/openclaw/openclaw)
-- [OpenClaw 文檔](https://docs.openclaw.ai)
+- [OpenClaw 文件](https://docs.openclaw.ai)
 
 ## 📝 如何貢獻
 
