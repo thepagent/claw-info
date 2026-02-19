@@ -47,8 +47,39 @@ jobs:
             const owner = context.repo.owner;
             const repo = context.repo.repo;
 
-            // Fetch PR details
-            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+            // Fetch PR details (with small retry window). GitHub can briefly report
+            // mergeable_state=unstable/unknown even when checks are green.
+            const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+            let pr;
+            const maxAttempts = 12;        // ~60s total
+            const backoffMs = 5000;
+
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+              const { data } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+              pr = data;
+
+              core.info(`PR #${prNumber} attempt ${attempt}/${maxAttempts}: mergeable=${pr.mergeable}, mergeable_state=${pr.mergeable_state}`);
+
+              // If mergeability isn't computed yet, wait and retry.
+              if (pr.mergeable === null || pr.mergeable_state === 'unknown') {
+                await sleep(backoffMs);
+                continue;
+              }
+
+              // If it's already clean, stop waiting.
+              if (pr.mergeable_state === 'clean') break;
+
+              // If checks are still running / just finished, GitHub often reports 'unstable' transiently.
+              // Give it a short window to settle.
+              if (['unstable'].includes(pr.mergeable_state) && attempt < maxAttempts) {
+                await sleep(backoffMs);
+                continue;
+              }
+
+              // For other states (dirty/blocked/behind), don't spin.
+              break;
+            }
 
             if (pr.draft) {
               core.info(`PR #${prNumber} is draft; skip.`);
@@ -74,19 +105,40 @@ jobs:
               return;
             }
 
-            // Check mergeability. Note: GitHub may return null briefly.
-            // mergeable_state values: clean, dirty, blocked, unstable, unknown, behind, draft...
-            const mergeableState = pr.mergeable_state;
-            core.info(`PR #${prNumber} mergeable_state=${mergeableState}, mergeable=${pr.mergeable}`);
-
-            if (pr.mergeable === null || mergeableState === 'unknown') {
-              core.info('Mergeability not yet computed; try again on next event.');
+            // Gate on mergeability + required checks.
+            // NOTE: mergeable_state is flaky/transient (often reports `unstable` even when checks are green),
+            // so we avoid using it as the primary signal.
+            if (pr.mergeable !== true) {
+              core.info(`Not mergeable yet (mergeable=${pr.mergeable}); skip.`);
               return;
             }
 
-            // Only merge when clean (i.e., branch protection + required checks satisfied)
-            if (mergeableState !== 'clean') {
-              core.info('Not clean yet (likely waiting for checks / conflicts / approvals); skip.');
+            const requiredChecks = [
+              'check-author', // Check Commit Author
+              'check',        // Block Forbidden Files
+            ];
+
+            const headSha = pr.head.sha;
+            const { data: checkData } = await github.rest.checks.listForRef({
+              owner,
+              repo,
+              ref: headSha,
+              per_page: 100,
+            });
+
+            const checkByName = new Map((checkData.check_runs || []).map(cr => [cr.name, cr]));
+            const missing = requiredChecks.filter(n => !checkByName.has(n));
+            if (missing.length) {
+              core.info(`Missing required checks on ${headSha}: ${missing.join(', ')}; skip.`);
+              return;
+            }
+
+            const notSuccess = requiredChecks
+              .map(n => checkByName.get(n))
+              .filter(cr => cr.conclusion !== 'success');
+
+            if (notSuccess.length) {
+              core.info(`Required checks not SUCCESS yet: ${notSuccess.map(cr => `${cr.name}=${cr.conclusion}`).join(', ')}; skip.`);
               return;
             }
 
