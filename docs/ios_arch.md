@@ -710,6 +710,36 @@ openclaw invoke device.info
 - **Gateway Protocol**: 與 OpenClaw desktop gateway 2026.2.x+ 相容
 - **WatchConnectivity**: 使用 Apple 原生框架，向後相容
 
+---
+
+## 已知問題（Open Issues）
+
+### 🔴 Bugs
+
+| Issue | 標題 | 說明 |
+|-------|------|------|
+| N/A | sendMessage 樂觀回報 | `deliveredImmediately: true` 在實際傳送完成前即回傳，非同步失敗時呼叫方不知情 |
+| N/A | 去重複邏輯誤判 | 相同內容的不同訊息可能被 `deliveryKey` 誤判為重複（當 messageID 為空時） |
+
+### 🟢 Feature Requests
+
+| Issue | 標題 | 說明 |
+|-------|------|------|
+| N/A | 現代化 watchOS 架構 | 遷移至單 target 架構（移除 legacy `application.watchapp2` + `watchkit2-extension`） |
+| N/A | 改進錯誤回報 | `sendMessage` 失敗時應等待確認後再回傳狀態，而非樂觀回報 |
+| N/A | 訊息去重複改進 | 改進 `deliveryKey` 邏輯，避免誤判相同內容的不同訊息 |
+
+**相關 PR：**
+- [#20054](https://github.com/openclaw/openclaw/pull/20054) - iOS Apple Watch companion MVP（已合併）
+
+---
+
+## 更新紀錄
+
+- **2026-02-19**：建立文件，涵蓋 iOS gateway 架構與 Apple Watch 整合
+
+---
+
 ## 參考資料
 
 - [PR #20054: iOS Apple Watch companion MVP](https://github.com/openclaw/openclaw/pull/20054)
