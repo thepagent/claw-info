@@ -4,6 +4,11 @@
 
 - 寫作規約：[`STYLE_GUIDE.md`](./STYLE_GUIDE.md)
 
+## Start here
+
+- [`start.md`](./start.md) — 最小可行 Start / Onboarding（daemon、channel、pairing、驗證清單）
+- [`troubleshooting.md`](./troubleshooting.md) — 常見故障排除（不回覆/收不到訊息/browser/cron/SSO…）
+
 ## 快速導覽
 
 - **Bedrock**
@@ -26,18 +31,15 @@
 - **運維**
   - [`profile_rotation.md`](./profile_rotation.md) — Profile rotation（憑證/身份輪替）與操作建議
 
-## 即將補齊：核心概念 Deep Dive
+## Core 概念 Deep Dive
 
-以下主題會以「核心概念」角度補上更完整的脈絡、設計取捨與最佳實務（見 issue/PR 追蹤）：
-
-- Tooling 契約與安全邊界：#31（PR #37）
-- Session 模型與隔離（main vs isolated）：#30（PR #36）
-- Gateway 架構與生命週期：#29（PR #35）
-- 訊息路由與 channel plugins：#32（PR #38）
-- Skills 系統（封裝/版本/測試）：#33（PR #39）
-- Memory 系統（files-as-memory）策略：#34（PR #40）
-
-> 註：若要認領撰寫或提出補充，直接在對應 issue/PR 留言即可。
+- `docs/core/`
+  - `gateway-lifecycle.md`
+  - `session-isolation.md`
+  - `tooling-safety.md`
+  - `messaging-routing.md`
+  - `skills-system.md`
+  - `memory-strategy.md`
 
 ## 貢獻方式（簡要）
 
