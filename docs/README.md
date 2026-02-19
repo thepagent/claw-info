@@ -6,7 +6,9 @@
 
 ## Start here
 
+- [`install.md`](./install.md) — 安裝（macOS/Linux，常見安裝坑）
 - [`start.md`](./start.md) — 最小可行 Start / Onboarding（daemon、channel、pairing、驗證清單）
+- [`cli.md`](./cli.md) — CLI 指令速查
 - [`troubleshooting.md`](./troubleshooting.md) — 常見故障排除（不回覆/收不到訊息/browser/cron/SSO…）
 
 ## 快速導覽
