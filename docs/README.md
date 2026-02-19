@@ -13,6 +13,9 @@
 
 ## 快速導覽
 
+- **架構**
+  - [`ios_arch.md`](./ios_arch.md) — iOS 架構：Gateway 模式、Apple Watch 整合、Bridge 命令
+
 - **Bedrock**
   - [`bedrock_auth.md`](./bedrock_auth.md) — Bedrock 認證與權限設定（含常見錯誤排查）
   - [`bedrock_pricing.md`](./bedrock_pricing.md) — Bedrock 計價概念與成本拆解
