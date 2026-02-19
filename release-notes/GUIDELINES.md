@@ -41,13 +41,21 @@ Within each section, list items in descending order of star rating (⭐⭐⭐ fi
 Each item should follow this format:
 
 ```markdown
-### ⭐⭐⭐ Item Title (#PR_NUMBER)
+### ⭐⭐⭐ Item Title ([#PR_NUMBER](https://github.com/openclaw/openclaw/pull/PR_NUMBER))
 - **用途**: What this feature/fix does
 - **解決問題**: Problem it solves
 - **影響**: Impact and benefits
 ```
 
 Always include the PR/Issue number at the end.
+
+#### Link rule (recommended)
+
+- **Make all referenced numbers clickable**.
+  - Upstream OpenClaw PRs: `[#12345](https://github.com/openclaw/openclaw/pull/12345)`
+  - If referencing this repo’s issues/PRs, link to `thepagent/claw-info` accordingly.
+
+This makes it easy to verify details and reduces ambiguity.
 
 ### 5. Summary Table
 
