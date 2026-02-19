@@ -1,0 +1,107 @@
+name: Auto-merge approved PRs
+
+on:
+  # Re-evaluate when someone approves
+  pull_request_review:
+    types: [submitted]
+
+  # Re-evaluate when labels change, new commits are pushed, or PR is opened/reopened
+  pull_request:
+    types: [opened, reopened, synchronize, labeled, unlabeled, ready_for_review]
+
+  # Re-evaluate when a check suite completes (so we can merge right after CI turns green)
+  check_suite:
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: auto-merge-${{ github.event.pull_request.number || github.event.check_suite.pull_requests[0].number || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auto-merge if approved and not blocked
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const core = require('@actions/core');
+
+            // Determine PR number depending on trigger
+            let prNumber;
+            if (context.payload.pull_request?.number) {
+              prNumber = context.payload.pull_request.number;
+            } else if (context.payload.review?.pull_request_url) {
+              prNumber = Number(context.payload.review.pull_request_url.split('/').pop());
+            } else if (context.payload.check_suite?.pull_requests?.length) {
+              prNumber = context.payload.check_suite.pull_requests[0].number;
+            }
+
+            if (!prNumber) {
+              core.info('No PR found in event payload; exiting.');
+              return;
+            }
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Fetch PR details
+            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+
+            if (pr.draft) {
+              core.info(`PR #${prNumber} is draft; skip.`);
+              return;
+            }
+
+            const labels = (pr.labels || []).map(l => (typeof l === 'string' ? l : l.name));
+            if (labels.includes('do-not-merge')) {
+              core.info(`PR #${prNumber} has do-not-merge label; skip.`);
+              return;
+            }
+
+            // Determine if PR is approved (latest review state per user)
+            const { data: reviews } = await github.rest.pulls.listReviews({ owner, repo, pull_number: prNumber, per_page: 100 });
+            const latestByUser = new Map();
+            for (const r of reviews) {
+              if (!r.user?.login) continue;
+              latestByUser.set(r.user.login, r.state);
+            }
+            const approvals = [...latestByUser.values()].filter(s => s === 'APPROVED').length;
+            if (approvals < 1) {
+              core.info(`PR #${prNumber} approvals=${approvals}; need >=1; skip.`);
+              return;
+            }
+
+            // Check mergeability. Note: GitHub may return null briefly.
+            // mergeable_state values: clean, dirty, blocked, unstable, unknown, behind, draft...
+            const mergeableState = pr.mergeable_state;
+            core.info(`PR #${prNumber} mergeable_state=${mergeableState}, mergeable=${pr.mergeable}`);
+
+            if (pr.mergeable === null || mergeableState === 'unknown') {
+              core.info('Mergeability not yet computed; try again on next event.');
+              return;
+            }
+
+            // Only merge when clean (i.e., branch protection + required checks satisfied)
+            if (mergeableState !== 'clean') {
+              core.info('Not clean yet (likely waiting for checks / conflicts / approvals); skip.');
+              return;
+            }
+
+            // Merge
+            try {
+              await github.rest.pulls.merge({
+                owner,
+                repo,
+                pull_number: prNumber,
+                merge_method: 'squash',
+              });
+              core.info(`Merged PR #${prNumber}.`);
+            } catch (e) {
+              core.warning(`Failed to merge PR #${prNumber}: ${e.message}`);
+              throw e;
+            }
