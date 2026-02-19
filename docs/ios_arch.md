@@ -1,6 +1,30 @@
 # iOS 架構文檔
 
-OpenClaw iOS 架構說明，涵蓋 gateway 模式、Apple Watch 整合與通訊模式。
+## TL;DR
+
+- iOS app 同時扮演**客戶端**與 **Gateway**，可內建或連接遠端 gateway
+- Apple Watch 透過 WatchConnectivity 與 iOS 通訊，無法直連遠端 gateway
+- 提供 `watch.status` 與 `watch.notify` 兩個 bridge 命令
+- 支援兩種傳輸模式：`sendMessage`（即時）與 `transferUserInfo`（排隊）
+- Gateway 使用與桌面版相同的 WebSocket protocol 與 capability 系統
+- 適用於行動裝置本地能力（相機、位置、通知）與跨裝置 agent 會話
+
+## 使用情境
+
+**何時使用內建 Gateway：**
+- 獨立行動使用，無需與其他裝置共享會話
+- 需要低延遲存取本地能力（相機、位置）
+- 無穩定網路連線至遠端 gateway
+
+**何時使用遠端 Gateway：**
+- 需要跨裝置（Mac/iOS/Android）共享 agent 會話
+- 集中管理 gateway 配置與 agent 狀態
+- 透過 Tailscale/VPN 安全存取家中或辦公室 gateway
+
+**Apple Watch 通知使用場景：**
+- 會議提醒、任務提醒等時效性通知
+- 快速可瞥見的狀態更新
+- 緊急警報（帶觸覺回饋）
 
 ## 概述
 
@@ -372,6 +396,93 @@ Watch 整合包含完整測試：
    - 檢查 WatchInboxView 更新
    - 確認本地通知出現
    - 驗證觸覺回饋
+
+## Troubleshooting
+
+### 症狀：Watch 通知未送達
+
+**可能原因：**
+1. Watch 未配對或 OpenClaw watch app 未安裝
+2. Watch 不可達且 transferUserInfo 佇列已滿
+3. 訊息內容為空（title 與 body 皆空白）
+
+**處理方式：**
+```bash
+# 1. 檢查 watch 狀態
+openclaw invoke watch.status
+
+# 2. 確認輸出
+# - paired: true
+# - appInstalled: true
+# - reachable: true (若為 false，訊息會排隊)
+
+# 3. 若 appInstalled 為 false，於 iPhone 上開啟 Watch app 安裝 OpenClaw
+```
+
+### 症狀：遠端 Gateway 連接失敗
+
+**可能原因：**
+1. Gateway URL 錯誤或 gateway 未啟動
+2. 防火牆阻擋 WebSocket 連接
+3. 配對 token 過期或無效
+
+**處理方式：**
+```bash
+# 1. 於 Mac/伺服器確認 gateway 運行
+openclaw status
+# 確認 Gateway 欄位顯示 "running"
+
+# 2. 測試連線
+curl -v ws://<gateway-ip>:18789
+
+# 3. 重新配對
+# iOS: 設定 → Gateway → 移除配對 → 重新配對
+```
+
+### 症狀：Capability 未註冊
+
+**可能原因：**
+1. 裝置不支援該 capability（如 WatchConnectivity）
+2. 權限未授予（如位置、相機）
+3. Gateway 連接時 capability 檢測失敗
+
+**處理方式：**
+```bash
+# 1. 檢查裝置 permissions
+openclaw invoke device.info
+# 查看 permissions 欄位
+
+# 2. iOS 設定中授予必要權限
+# 設定 → OpenClaw → 權限
+
+# 3. 重新連接 gateway
+# iOS: 關閉 app → 重新開啟
+```
+
+### 症狀：sendMessage 失敗回退至 transferUserInfo
+
+**可能原因：**
+1. Watch 暫時不可達（螢幕關閉、藍牙斷線）
+2. WCSession 尚未完全啟動
+
+**處理方式：**
+- 這是正常行為，訊息會排隊等待 watch 可達時傳送
+- 若需立即傳送，確保 watch 螢幕開啟且 iPhone 在附近
+- 檢查 watch.status 的 `reachable` 欄位
+
+## 安全注意事項
+
+- **配對 token**：妥善保管配對 token，不要分享或提交至版本控制
+- **遠端 Gateway**：使用 Tailscale/VPN 而非直接暴露 gateway 至公網
+- **權限最小化**：僅授予 app 必要的裝置權限
+- **訊息內容**：避免在 watch 通知中包含敏感資訊（通知可能顯示於鎖定畫面）
+
+## 版本相容性
+
+- **iOS**: 需 iOS 15.0+
+- **watchOS**: 需 watchOS 11.0+
+- **Gateway Protocol**: 與 OpenClaw desktop gateway 2026.2.x+ 相容
+- **WatchConnectivity**: 使用 Apple 原生框架，向後相容
 
 ## 參考資料
 
