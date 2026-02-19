@@ -13,6 +13,9 @@
 
 ## 快速導覽
 
+- **架構**
+  - [`ios_arch.md`](./ios_arch.md) — iOS 架構：Gateway 模式、Apple Watch 整合、Bridge 命令
+
 - **Linux / systemd（運維）**
   - [`linux_systemd.md`](./linux_systemd.md) — Linux（systemd）上 gateway 重啟、port 衝突與 model 設定踩坑
 
