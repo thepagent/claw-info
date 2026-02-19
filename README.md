@@ -14,6 +14,7 @@ claw-info/
 │   ├── bedrock_auth.md            # AWS Bedrock 認證與配置指南
 │   ├── bedrock_pricing.md         # Bedrock 模型定價與成本控制
 │   ├── cron.md                    # OpenClaw Cron 調度系統深度解析
+│   ├── linux_systemd.md           # Linux（systemd）上 gateway 重啟、port 衝突與 model 設定踩坑
 │   ├── nodes.md                   # OpenClaw Nodes 管理與配置
 │   ├── pricing_howto.md           # 定價策略與實作
 │   ├── profile_rotation.md        # 同一 Provider 的 Auth Profiles 輪換（Rotation / Failover）
