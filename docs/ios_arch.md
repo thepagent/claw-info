@@ -718,16 +718,22 @@ openclaw invoke device.info
 
 | Issue | 標題 | 說明 |
 |-------|------|------|
-| N/A | sendMessage 樂觀回報 | `deliveredImmediately: true` 在實際傳送完成前即回傳，非同步失敗時呼叫方不知情 |
-| N/A | 去重複邏輯誤判 | 相同內容的不同訊息可能被 `deliveryKey` 誤判為重複（當 messageID 為空時） |
+| [#14425](https://github.com/openclaw/openclaw/issues/14425) | iOS app crashes when receiving camera.snap command | iOS app 收到 camera.snap 命令時崩潰 |
+| [#6767](https://github.com/openclaw/openclaw/issues/6767) | iOS chat broken — node role unauthorized | Node role 未授權導致訊息消失 |
+
+### 🟡 潛在改進（來自 PR #20054 Review）
+
+| 項目 | 說明 | 優先級 |
+|------|------|--------|
+| sendMessage 樂觀回報 | `deliveredImmediately: true` 在實際傳送完成前即回傳，非同步失敗時呼叫方不知情 | 中 |
+| 去重複邏輯誤判 | 相同內容的不同訊息可能被 `deliveryKey` 誤判為重複（當 messageID 為空時） | 低 |
+| 現代化 watchOS 架構 | 遷移至單 target 架構（移除 legacy `application.watchapp2` + `watchkit2-extension`） | 低 |
 
 ### 🟢 Feature Requests
 
 | Issue | 標題 | 說明 |
 |-------|------|------|
-| N/A | 現代化 watchOS 架構 | 遷移至單 target 架構（移除 legacy `application.watchapp2` + `watchkit2-extension`） |
-| N/A | 改進錯誤回報 | `sendMessage` 失敗時應等待確認後再回傳狀態，而非樂觀回報 |
-| N/A | 訊息去重複改進 | 改進 `deliveryKey` 邏輯，避免誤判相同內容的不同訊息 |
+| [#18843](https://github.com/openclaw/openclaw/issues/18843) | Add configurable timeout for node command execution | 可配置的 node 命令執行超時 |
 
 **相關 PR：**
 - [#20054](https://github.com/openclaw/openclaw/pull/20054) - iOS Apple Watch companion MVP（已合併）
