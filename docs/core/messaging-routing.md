@@ -1,264 +1,260 @@
-# 訊息路由與 Channel Plugins（頻道外掛）
+# 訊息路由與 Channel Plugins（Messaging routing & channel plugins）
 
-> 狀態：完整文件（v1）。本文件深入探討 OpenClaw 的訊息路由體系、Channel 插件架構、`message tool` 與 `sessions_send` 工具的差異、回覆標籤、主題/訊息線、投遞模式、安全邊界，並提供範例與排障指南。
-
----
-
-## 1. TL;DR（500 字精華）
-
-| 核心概念 | 說明 |
-|----------|------|
-| **路由模型** | 事件流：`Channel → Gateway Router → Session / Agent → Tool Calls`，完全由 Gateway 統一調度 |
-| **Channel Plugins** | 每個平台（Telegram、Discord、WhatsApp）都是獨立外掛，實現 `ChannelProvider` interface，透過 WebSocket/Webhook/Long Polling 接入 |
-| **`message tool`** | Agent 回覆使用者：發送訊息到 session 的 target（telegram 會用原 chat_id + message_id 回覆） |
-| **`sessions_send`** | 跨 session 通訊：從一個 session 主動發訊息到另一個 session 的 target，常用於 cron / isolated agent 結果通知 |
-| **回覆標籤（reply_tag）** | 用於建立「訊息線程」，讓 Gateway 知道這條訊息是回覆哪一個 upstream message |
-| **主題（Topics）** | Telegram 頻道討論串 / Discord thread，用 topic_id（Discord）或 message_id（Telegram）標記 |
-| **投遞模式（Delivery Modes）** | none（不投递）、announce（到預設 target）、target（指定 target），僅 isolated session 支援 |
-| **安全邊界** | sessions_send 受 tools.allow/deny 控制；message tool 受 sandbox policy 與 elevated 權限影響 |
-| **範例場景** | 日常 reply：message；cron 結果通知：sessions_send；跨 agent 通訊：sessions_send |
+> 本文說明 OpenClaw 在「收到訊息 → 路由到 session/agent → 產生回覆 → 送回原平台」這條鏈路上，實際是如何運作的。
+>
+> 目標讀者：需要
+> - 新增/除錯 Telegram / Discord / Signal 等通道整合的人
+> - 理解為什麼訊息沒有進到正確 session、或回覆跑到奇怪地方的人
+> - 設計安全策略（避免 prompt injection、避免誤發訊息）的人
 
 ---
 
-## 2. 為什麼這很重要
+## TL;DR
 
-OpenClaw 的核心是「多 channel、多 session、多 agent」的訊息中樞。
+- OpenClaw 的「訊息路由」本質是：**把外部事件（inbound）映射到內部 session，並把 agent 產生的 outbound 回覆送回同一個對話上下文**。
+- Channel plugin 負責「跟外部平台對接」，Gateway 負責「統一路由/狀態/權限」。
+- 你要區分三件事：
+  1) **訊息來源**（哪個 channel / 哪個 chat / 哪個 thread）
+  2) **要送到哪個 session**（main 或 isolated 或 cron）
+  3) **如何回覆**（直接在當前 chat reply，或跨 session send，或主動推送）
+- **最常見的問題**不是模型，而是：
+  - bot 沒收到事件（webhook/長連線問題）
+  - 路由鍵不一致（chat_id / threadId 變了）
+  - 權限/安全政策阻擋 message tool
 
 ---
 
-## 3. 核心概念
+## 1. 為什麼這很重要
 
-### 3.1 Session 與 Target
+訊息路由是所有「24/7 代理」的神經系統：
 
-| 概念 | 說明 | 範例 |
-|------|------|------|
-| **Session** | 一個「對話實體」：一次對話、一個 cron job、一個 isolated agent 執行 | Telegram DM 的 chat_id；Discord thread 的 thread_id |
-| **Target** | Session 的「預設回覆目的地」：通常等於 channel + chat_id/thread_id | target = "telegram:123456789"（DM） |
-| **Session Key** | Gateway 內部唯一識別：{agent_id}:{source_channel}:{chat_id/thread_id} | main:telegram:123456789 |
+- **可靠性**：訊息沒進來/回不去，就等於整個 agent 失明失語。
+- **安全性**：錯路由可能造成「把私人資訊回到錯的群」「把指令回到公開頻道」。
+- **可維運性**：理解路由模型，才能定位是 channel、gateway、session 還是 tool policy 的問題。
 
-### 3.2 Channel Provider Interface（簡化版）
+---
 
-Channel plugins 必須實作的介面（概念化）：
+## 2. 核心概念
 
-```typescript
-interface ChannelProvider {
-  start(): Promise<void>;
-  stop(): Promise<void>;
-  onEvent(callback: (event: ChannelEvent) => void): void;
-  sendMessage(params: SendMessageParams): Promise<MessageId>;
-}
+### 2.1 Inbound vs Outbound
+
+- **Inbound**：外部平台送進 Gateway 的事件（例如 Telegram message update）。
+- **Outbound**：Gateway/agent 透過 channel plugin 把回覆送回外部平台。
+
+> 重要原則：**Inbound 的 metadata 不是“裝飾”，它是路由鍵**。
+
+### 2.2 路由鍵（Routing keys）
+
+典型會用到的路由鍵（依平台不同而不同）：
+
+- `channel`：telegram / discord / signal ...
+- `chat_id`：對話/群組 ID（最常用）
+- `message_id`：某一則訊息 ID（用於 reply-to）
+- `threadId` / `topicId`：群組內的主題/討論串（例如 Telegram topics）
+- `sender_id`：發訊者 ID（私訊情境常用）
+
+OpenClaw 會把這些資訊包成「聊天上下文」，用於：
+
+- 決定回覆要送到哪裡（同 chat、同 thread）
+- 決定是否要用 reply（引用回覆）
+- 避免把訊息送錯地方
+
+### 2.3 Session 與路由的關係
+
+- **main session**：跟人類互動的主要上下文。訊息路由通常會把同一個 chat 映射到同一個 main session。
+- **isolated session（sub-agent）**：背景任務。它可以在完成後把結果「回送」到 main session（或直接 message tool 回到 chat）。
+- **cron**：只是觸發器；觸發後仍會選擇 main（systemEvent）或 isolated（agentTurn）。
+
+---
+
+## 3. 架構 / 心智模型
+
+下面用一個「Telegram 私訊」例子說明完整資料流：
+
+```
+[Telegram]
+  │  (message update)
+  ▼
+[Channel plugin: Telegram]
+  │  normalize inbound payload
+  ▼
+[Gateway]
+  │  1) identify channel/chat/thread
+  │  2) find/create session
+  │  3) run agent turn (LLM)
+  ▼
+[Agent]
+  │  decides: reply / tool call / spawn
+  ▼
+[Gateway tools runtime]
+  │  may call: message / sessions_send / cron / ...
+  ▼
+[Channel plugin]
+  │  send outbound message
+  ▼
+[Telegram]
 ```
 
-Gateway 會為每個 channel 建立實體，收到事件後解析成統一格式再推給 router。
+### 3.1 Channel plugin 的責任
+
+- 與平台 API 互動（webhook、長輪詢、WS…）
+- 把 inbound 轉成 Gateway 可理解的事件格式
+- 把 Gateway 的 outbound 請求轉成平台 API 呼叫
+- 處理平台限制（速率、長度、附件、thread/topic）
+
+### 3.2 Gateway 的責任
+
+- 路由：inbound → session
+- session 狀態：歷史、工具權限、工作目錄
+- policy：允許/阻擋危險工具、是否需要人類確認
+- 統一 observability（log、run status、errors）
 
 ---
 
-## 4. 架構與心智模型
+## 4. `message` tool vs `sessions_send`
 
-### 4.1 訊息從「收到」到「發出」的完整流動
+這是很多人會混淆的點：
 
-```
-使用者 → Channel Provider → Gateway Router → Session / Agent → Tool Calls → Gateway → Channel Plugin
-```
+### 4.1 `message` tool：對外發送（Outbound to Channel）
 
----
+用途：把訊息送到 Telegram/Discord/Signal 等外部平台。
 
-## 5. `message tool` vs `sessions_send`
+特性：
+- 會真的「對外」產生副作用（發出訊息）
+- 通常需要更嚴格的安全政策
+- 需要指定 target（chat id / channel id / user id）
 
-### 5.1 `message tool`（預設 reply）
+適用：
+- 主動推播提醒
+- 從 cron 發提醒到 Telegram
+- sub-agent 完成任務後主動通知
 
-**用途**：Agent 回覆**當前 session 的使用者**（預設 target）
+### 4.2 `sessions_send`：對內送訊息（Intra-OpenClaw）
 
-**範例**：
+用途：把一段文字送到另一個 session（通常是 main session 或某個 subagent）作為「新的輸入」。
 
-```yaml
-tool: message
-params:
-  text: "這是 Agent 回覆"
-  target: "telegram:123456789"  # 可選：預設為 session.target
-  reply_tag: "157"              # 可選：被回覆的 message_id
-  topic_id: "456!"              # 可選：Discord thread_id
-  parse_mode: "HTML"            # 可選：HTML / Markdown
-  disable_web_page_preview: true
-```
+特性：
+- 不直接對外（仍會走 Gateway/agent）
+- 常用於「控制 sub-agent」或「把結果交回主會話」
 
-**Gateway 處理**：
-1. 解析 `params.target`，若未指定 → 用 `session.target`
-2. 記入 `session.state.pending_messages`
-3. Tool 完成後 flush 到 channel
+適用：
+- 你想讓 main session 看到某個 sub-agent 的結果
+- 你要 steer 某個 sub-agent（追加指令）
 
-### 5.2 `sessions_send`（跨 session 通訊）
+### 4.3 最佳實踐（簡化選擇）
 
-**用途**：從一個 session 主動向**另一個 session 的 target 發送訊息**
-
-**範例**：
-
-```yaml
-tool: sessions_send
-params:
-  text: "Cron job #123 完成：已檢查 15 個 issues"
-  target: "telegram:987654321"  # 指定 target（可以與當前 session 不同）
-  reply_tag: "100"              # 可選：回覆某條訊息
-  topic_id: "200!"              # 可選：Discord thread_id
-```
-
-**關鍵差異**：
-
-| 對比維度 | `message` | `sessions_send` |
-|---------|----------|----------------|
-| 預設 target | session 的 target | 必須 Explicit 指定 target |
-| 常用場景 | Agent 回覆當前使用者 | cron / isolated agent / 多 agent 通訊 |
-| policy 影響 | 受 sandbox policy 與 elevated 影響 | 受 `tools.allow/deny` 控制 |
-| session 關聯 | 屬於當前 session 的 tool call | 可跨 session（session A 調用 → session B 收到） |
-| Gateway 處理 | 延後 flush 到 session.target | 立刻執行（找出 target 所在 session 或直接 send） |
+- 你要「回覆/通知人類」→ 優先用 **message tool**（但要小心 target）
+- 你要「把結果交給另一個 agent/會話繼續處理」→ 用 **sessions_send**
 
 ---
 
-## 6. 回覆標籤（reply_tag）與主題（Topics）
+## 5. Reply tags（引用回覆）與對話一致性
 
-### 6.1 `reply_tag`（回覆哪條訊息）
+在支援 reply 的平台上（例如 Telegram），OpenClaw 允許你在文字最開頭加 reply tag：
 
-**用途**：建立「回覆」關聯（Telegram 的 reply_to_message_id，Discord 的 message_reference）
+- `[[reply_to_current]]`：回覆當前觸發訊息
+- `[[reply_to:<id>]]`：回覆指定訊息 id
 
-| Channel | reply_tag 對應欄位 | 限制 |
-|---------|-------------------|-----|
-| Telegram | reply_to_message_id | 必須是同 chat_id 內的 message |
-| Discord | message_reference.message_id | 必須是同 channel 內的 message |
-| WhatsApp | 不支援（僅支援 quick reply buttons） | |
+目的：
+- 讓對話更清晰，避免在群組中「不知道回誰」
+- 讓使用者更容易追溯上下文
 
-### 6.2 主題 / 討論串（topic_id / thread_id）
-
-**用途**：把訊息發送到特定主題討論串
-
-| Channel | 名稱 | 參數 | 範例 |
-|---------|-----|------|-----|
-| Telegram | Discussion group | topic_id | topic_id: "-1001234567890" |
-| Discord | Thread | topic_id | topic_id: "456!" |
-| WhatsApp | 不支援 | - | - |
+最佳實踐：
+- 在群組/多線程中，優先用 `[[reply_to_current]]`
+- 對外主動推播（非回覆）就不要用 reply tag
 
 ---
 
-## 7. 投遞模式（Delivery Modes）
+## 6. Threads / Topics
 
-**僅適用於 isolated session**
+不同平台的 thread 模型不同：
 
-| 模式 | 說明 |
-|------|------|
-| none | 不投遞任何結果（預設） |
-| announce | 把 isolated session 的最後一條訊息，投遞到 session 的 target |
-| target | 指定任意 target |
+- Telegram：可能有群組「topics」與 threadId
+- Discord：threads / channels
 
-### 範例：Cron job 把結果通知到指定頻道
-
-```yaml
-payload:
-  kind: agentTurn
-  message: "請列出 GitHub 的 open issues"
-  target: "telegram:987654321@announce"
-delivery:
-  mode: "announce"
-```
+原則：
+- **同一個 chat 裡的不同 thread，應視為不同上下文**（至少要在路由鍵層面保留 thread id）
+- 若你忽略 thread id，回覆就可能跑到錯的討論串
 
 ---
 
-## 8. 安全邊界與 Policy
+## 7. Delivery modes（輸出策略）
 
-### `sessions_send` 的安全控制
+你可以把輸出策略分為三種：
 
-- `tools.allow/deny`：控制 session 是否可以呼叫 `sessions_send` tool
+1) **同步回覆**：收到 inbound 後立即回覆（最常見）
+2) **非同步回覆**：先 ack「我收到」，然後 spawn sub-agent，完成後再 message 通知
+3) **定時推播**：cron 觸發，message tool 送出
 
-### `message tool` 的安全控制
-
-- Sandbox Mode：若 session sandbox.mode != "off"，message tool 可能受限
-
----
-
-## 9. 常見工作流（Recipes）
-
-### 9.1 日常 Telegram DM 互動
-
-User → Channel → Gateway Router → Agent → message tool → Gateway → Channel → User
-
-### 9.2 Cron job 發送每日摘要到特定頻道
-
-1. Cron Scheduler 唤醒 → 啟動 isolated session
-2. Agent 推理 → tool calls...
-3. isolated session 結束 → Gateway flush 到 target
-
-### 9.3 多 Agent 工作流（Manager → Worker → User）
-
-Manager → sessions_send → Worker → sessions_send → Main → message tool → User
+建議：
+- 任何可能超過數十秒的工作（查很多網頁、跑重計算）→ 用非同步：spawn sub-agent。
 
 ---
 
-## 10. 故障排除（Troubleshooting）
+## 8. 安全 / 安全邊界（Security notes）
 
-### 10.1「收到使用者訊息，但沒有回覆」
+### 8.1 把 inbound 當不可信
 
-**檢查清單**：
-1. Gateway 有收到 ChannelEvent？
-2. Session 找對了嗎？
-3. Agent 有決定 call `message tool` 嗎？
-4. `message tool` 的 target 正確嗎？
-5. Channel Provider 有送出去嗎？
+- email/web/page/聊天內容都可能包含 prompt injection
+- 不要讓 channel plugin 的文字內容直接變成 `exec` 或 `message` 的參數
 
-### 10.2 `sessions_send` 收不到訊息
+### 8.2 避免送錯 target
 
-**檢查清單**：
-1. target 格式正確嗎？
-2. Channel Provider 已正確啟動？
-3. target 對應的 channel/chat 有允許 bot 發訊息嗎？
+- 在群組中發敏感資訊是最常見事故
+- 實作上建議：
+  - 對外 message 時，明確帶上 `chat_id` 與 threadId
+  - 對敏感動作（發到非當前 chat）要求額外確認
 
-### 10.3 reply_tag 無效
+### 8.3 對外訊息屬於高風險工具
 
-**可能原因**：
-1. message_id 已被删除
-2. message_id 在不同 chat_id
-3. Channel Provider 不支持 reply_to_message_id
-
-### 10.4 訊息亂序 / 收到多條相同訊息
-
-**可能原因**：
-1. Channel Provider 重試失敗
-2. Multiple sessions 使用同一 target
-3. delivery.mode = "announce" + sessions_send 兩者並存
+- message tool 應被視為「外部副作用」
+- 建議在 policy 層設 gate：
+  - 需要使用者明確指示
+  - 或僅允許特定 cron/job 使用
 
 ---
 
-## 11. 運維檢查清單
+## 9. 常見 workflows（Recipes）
 
-```bash
-openclaw gateway status          # Channel Adapter 狀態
-openclaw sessions list           # 檢查當前 sessions
-openclaw sessions show <key>     # 查看 pending messages
-```
+### 9.1 「收到訊息 → 交給 sub-agent 跑 → 回報結果」
 
----
+- main session：接收到需求後 spawn sub-agent
+- sub-agent：產出結果（不直接對外發）
+- main session：整理後用 reply tag 回覆人類
 
-## 12. 附錄：常見問題（Q&A）
+### 9.2 「每日摘要推播」
 
-### Q1：`message tool` 與 `sessions_send` 選哪個？
-
-- **用 `message tool`**：Agent 回覆當前對話的使用者
-- **用 `sessions_send`**：cron job / isolated agent / 多 agent 通訊
-
-### Q2：Telegram 限制（Rate Limits）
-
-- 每秒最多 30 messages（same chat_id）
-- 每分鐘最多 20 messages（same message thread）
-- 解法：批次匯總訊息
+- cron：每天/每小時觸發
+- payload：isolated agentTurn 產生摘要
+- delivery：announce（或 webhook）
 
 ---
 
-## 13. 更新紀錄
+## 10. Failure modes & troubleshooting
 
-- **2026-02-18**：初版，完整涵蓋 routing model、channel plugin 架構、message vs sessions_send、reply_tag、topics/delivery modes、safety、recipes、troubleshooting。
+### 10.1 收不到訊息
+
+- 檢查 bot token / webhook / long poll 是否正常
+- 檢查 Gateway 是否在跑、channel plugin 是否連線
+
+### 10.2 收到但不回覆
+
+- 看是否被 policy 擋掉（message tool 被拒）
+- 看是否卡在 tool call（例如 browser 沒 attach tab）
+
+### 10.3 回覆到錯地方
+
+- 檢查 chat_id / threadId
+- 檢查你是否用了跨 chat 的 message target
+
+### 10.4 sub-agent 做完但人類沒看到
+
+- sub-agent 結果如果只回到 isolated session，需要用 sessions_send 交回 main 或 message 推播
 
 ---
 
-## 相關資源
+## 11. Open questions
 
-- docs/core/gateway-lifecycle.md - Gateway 架構與狀態機
-- docs/cron.md - Cron 調度與 isolated session
-- docs/sandbox.md - Sandbox policy 與安全邊界
-- docs/webhook.md - Webhook delivery
+- 是否要提供「路由視覺化」：顯示 inbound → session mapping
+- 是否要提供「安全模式」：禁止跨 chat message，除非 explicit allowlist
+
