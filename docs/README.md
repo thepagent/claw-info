@@ -38,6 +38,7 @@
 
 - **How-to / Recipes**
   - [`howto/agent-browser-agentcore.md`](./howto/agent-browser-agentcore.md) — Build agent-browser（PR #397）並連線 AWS Bedrock AgentCore Browser
+  - [`howto/aws-iam-minimal-botbedrockrole.md`](./howto/aws-iam-minimal-botbedrockrole.md) — OpenClaw AWS IAM 最小權限配置（BotBedrockRole）
 
 - **運維**
   - [`profile_rotation.md`](./profile_rotation.md) — Profile rotation（憑證/身份輪替）與操作建議
