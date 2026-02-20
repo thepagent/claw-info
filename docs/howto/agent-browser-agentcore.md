@@ -1,7 +1,59 @@
 # How-to：Build agent-browser（PR #397）並連線 AWS Bedrock AgentCore Browser
 
-> 目的：讓你從原始碼 build 出包含 **`-p agentcore`** provider 的 `agent-browser`（對應 PR #397），並在本機用最短步驟連上 **AWS Bedrock AgentCore Browser**。
->
+## 背景：為何要把 agent-browser × AgentCore Browser 串起來？
+
+在 OpenClaw 的使用情境裡，**讓 Agent 能穩定操作瀏覽器**（打開網站、登入、點擊、輸入、擷取資料、產生摘要/報告）一直是非常核心、且高頻的需求。
+
+這份文件展示如何結合兩個重要技術，讓「可被驗證、可被封裝成 Skill、可被 Agent 重複使用」的瀏覽器能力落地：
+
+### 1) agent-browser 是什麼？為什麼重要？
+
+`agent-browser` 是一個面向 AI/Agent 的瀏覽器自動化 CLI：
+
+- 它提供一致的命令介面（`open/click/type/snapshot/eval/...`），適合被 Agent 程式化調用。
+- 它可以用「refs/snapshot」這種對 AI 友善的方式探索與操作頁面。
+- 它把複雜的 Playwright/瀏覽器控制封裝成短命令，降低整合成本。
+
+### 2) Amazon Bedrock AgentCore Browser 是什麼？為什麼重要？
+
+Amazon Bedrock AgentCore Browser 提供「雲端可控的遠端瀏覽器 session」：
+
+- 透過 AWS 的 SigV4 身分驗證與權限控管，能在企業環境更容易治理。
+- 支援 browser profile persistence（cookies/localStorage），讓登入狀態可跨 session 重用。
+- 提供 Live View（Console），方便人類在必要時介入完成登入/驗證等步驟。
+
+### 3) 串在一起後，你會得到什麼？
+
+本文件會帶你走完一條建議的落地路徑：
+
+1) 先用 **AWS CLI** 驗證 AgentCore Browser 的 session/profile 機制可用
+2) 再用 **agent-browser** 驗證 CLI 操作可用（進入 `https://x.com/home`）
+3) 最後把流程封裝成 **Skill**，並在新的 agent session 裡驗證可重用
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│ (1) AWS CLI：驗證 AgentCore Browser / profile persistence            │
+│     start-browser-session → Live View 登入 → save-browser-session... │
+└───────────────┬──────────────────────────────────────────────────────┘
+                │
+                v
+┌──────────────────────────────────────────────────────────────────────┐
+│ (2) agent-browser：驗證 CLI 能穩定進入 https://x.com/home            │
+│     agent-browser -p agentcore open ... --timeout 30000              │
+└───────────────┬──────────────────────────────────────────────────────┘
+                │
+                v
+┌──────────────────────────────────────────────────────────────────────┐
+│ (3) Skill：讓 Agent 產生並封裝自己的 SKILL.md                        │
+│     prerequisites / commands / guardrails / troubleshooting          │
+└───────────────┬──────────────────────────────────────────────────────┘
+                │
+                v
+┌──────────────────────────────────────────────────────────────────────┐
+│ (4) New Agent Session：只依賴 Skill 重跑，確認可重用                  │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
 > 對應實作來源：vercel-labs/agent-browser PR #397
 > - https://github.com/vercel-labs/agent-browser/pull/397
 
