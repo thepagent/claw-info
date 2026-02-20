@@ -26,7 +26,7 @@ agent-browser install
 
 # 3) 連 AWS Bedrock AgentCore Browser（需要 AWS credentials）
 export AGENTCORE_REGION=us-east-1
-agent-browser -p agentcore open https://example.com
+agent-browser -p agentcore open https://x.com/home --timeout 30000 2>&1
 
 # 4) 收尾
 agent-browser close
@@ -63,6 +63,27 @@ PR #397 主要新增：
   - EC2/ECS/IAM Role 等
 
 本指南預設 region 使用 `us-east-1`（可改）。
+
+### 1.4（可選但推薦）用 AWS CLI 先做一次 API 驗證
+
+在使用 `agent-browser` 之前，你可以先用 AWS CLI 直接打 AgentCore API，確認：
+
+- AWS credentials / region 正確
+- `bedrock-agentcore:StartBrowserSession` 權限沒問題
+- 指定的 profile identifier 能被接受
+
+範例（請依你的 `--profile` 調整，下面示範用 `botreadonly`）：
+
+```bash
+aws bedrock-agentcore start-browser-session \
+  --browser-identifier aws.browser.v1 \
+  --profile-configuration '{"profileIdentifier":"pahudnet_gmail-attEctm8Qe"}' \
+  --session-timeout-seconds 3600 \
+  --region us-east-1 \
+  --profile botreadonly
+```
+
+> 注意：請勿把輸出中的 `sessionId` 等資訊直接貼到公開 issue/PR。
 
 ### 1.3 IAM 權限（執行 agent-browser 的身份都需要）
 
@@ -115,8 +136,8 @@ PR #397 主要新增：
 
 #### 如何讓使用者/Agent 自行確認
 
-- 直接跑一次：
-  - `agent-browser -p agentcore open https://example.com`
+- 直接跑一次（建議加 timeout，避免網站載入/跳轉較慢時誤判）：
+  - `agent-browser -p agentcore open https://x.com/home --timeout 30000 2>&1`
   - 若缺權限通常會看到 `403 Forbidden` 或類似 `Failed to start AgentCore browser session`。
 - 若你們組織允許，可用 **AWS Policy Simulator**（Console）針對上述 actions 測試是否 Allow。
 
@@ -201,8 +222,10 @@ agent-browser install --with-deps
 
 ```bash
 export AGENTCORE_REGION=us-east-1
-agent-browser -p agentcore open https://example.com
+agent-browser -p agentcore open https://x.com/home --timeout 30000 2>&1
 ```
+
+> 註：`--timeout 30000` 可避免網站載入/跳轉較慢時，CLI 早回報造成誤判；`2>&1` 則方便把 stderr（包含 Live View）一併收集。
 
 成功時通常會看到類似輸出（PR 內會印到 stderr）：
 
@@ -283,5 +306,5 @@ agent-browser connect "wss://..." --headers '{"Authorization":"AWS4-HMAC-SHA256.
 但大多數情況下建議用：
 
 ```bash
-agent-browser -p agentcore open https://example.com
+agent-browser -p agentcore open https://x.com/home --timeout 30000 2>&1
 ```
