@@ -24,6 +24,29 @@ Amazon Bedrock AgentCore Browser 提供「雲端可控的遠端瀏覽器 session
 
 ### 3) 串在一起後，你會得到什麼？
 
+#### Architecture / Data Flow（元件串接圖）
+
+```text
+User / Agent
+   |
+   | (commands: open/click/type/snapshot/eval/close)
+   v
+agent-browser CLI (provider: agentcore)
+   |
+   | 1) REST (SigV4): StartBrowserSession
+   |    - profileIdentifier=<AGENTCORE_PROFILE_ID>
+   v
+Amazon Bedrock AgentCore Browser
+   |\
+   | \ 2a) WebSocket (SigV4 headers): Automation Stream (CDP)
+   |  \
+   |   \ 2b) Live View Stream (Console)
+   |
+   | 3) (optional) SaveBrowserSessionProfile
+   v
+Profile persistence (cookies/localStorage)
+```
+
 本文件會帶你走完一條建議的落地路徑：
 
 1) 先用 **AWS CLI** 驗證 AgentCore Browser 的 session/profile 機制可用
