@@ -201,6 +201,8 @@ agent-browser -p agentcore open https://x.com/home
 aws sts get-caller-identity
 ```
 
+> 注意：此命令輸出會包含 AWS Account / ARN 等識別資訊；若要貼到公開 issue/PR，請先打碼或移除敏感欄位。
+
 ### 7.2 CDP 連線失敗（`Failed to connect to AgentCore browser session via CDP`）
 
 - 常見原因：region 不對、網路限制、或 session 啟動後立刻失效。
