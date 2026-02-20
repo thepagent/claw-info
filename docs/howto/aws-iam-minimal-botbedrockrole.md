@@ -1,12 +1,5 @@
 # OpenClaw AWS IAM 最小權限配置（BotBedrockRole）
 
-```text
-Prompt to your Agent:
-請根據這份文件，直接用 AWS CLI 產生一個「AWS IAM Role（BotBedrockRole）」的建立操作指南（以 aws iam create-role / attach-role-policy / put-role-policy 為主），並引導我完成最小權限配置。
-文件：
-https://github.com/thepagent/claw-info/blob/main/docs/howto/aws-iam-minimal-botbedrockrole.md
-```
-
 本文提供一份可分享的 **OpenClaw 最小 IAM 權限配置**範例，目標是讓 OpenClaw 能：
 
 - 讀取帳單與成本資訊（唯讀）
