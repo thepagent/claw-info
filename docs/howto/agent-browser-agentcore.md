@@ -72,15 +72,15 @@ PR #397 主要新增：
 - `bedrock-agentcore:StartBrowserSession` 權限沒問題
 - 指定的 profile identifier 能被接受
 
-範例（請依你的 `--profile` 調整，下面示範用 `botreadonly`）：
+範例（變數用 `<>` 表示，且使用**全大寫**；請依你的 `--profile` / region 調整）：
 
 ```bash
 aws bedrock-agentcore start-browser-session \
   --browser-identifier aws.browser.v1 \
-  --profile-configuration '{"profileIdentifier":"pahudnet_gmail-attEctm8Qe"}' \
+  --profile-configuration '{"profileIdentifier":"<AGENTCORE_PROFILE_ID>"}' \
   --session-timeout-seconds 3600 \
-  --region us-east-1 \
-  --profile botreadonly
+  --region <AGENTCORE_REGION> \
+  --profile <AWS_PROFILE_NAME>
 ```
 
 > 注意：請勿把輸出中的 `sessionId` 等資訊直接貼到公開 issue/PR。
