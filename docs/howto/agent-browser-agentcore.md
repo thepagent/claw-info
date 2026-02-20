@@ -275,7 +275,7 @@ aws bedrock-agentcore save-browser-session-profile \
 
 ## 6. 用 agent-browser 連線（推薦）
 
-### 5.1 最小命令
+### 6.1 最小命令
 
 ```bash
 export AGENTCORE_REGION=us-east-1
@@ -302,7 +302,7 @@ agent-browser snapshot
 agent-browser close
 ```
 
-### 5.2 啟用 Profile Persistence（跨 session 保留登入）
+### 6.2 啟用 Profile Persistence（跨 session 保留登入）
 
 ```bash
 export AGENTCORE_REGION=us-east-1
@@ -317,6 +317,64 @@ agent-browser -p agentcore open https://x.com/home --timeout 30000 2>&1
 
 ## 7. 常用環境變數（AgentCore）
 
+---
+
+## 8. 把流程變成 Skill（讓 Agent 自己可重用）
+
+當你確認 **AWS CLI 流程可用**、且 **手動 agent-browser 命令可用** 後，下一步才建議把它封裝成一個 Skill，讓 Agent 能在未來的工作中穩定重複使用。
+
+### 8.1 流程順序（建議）
+
+```
+(1) AWS CLI：手動驗證 AgentCore 可用
+    - start-browser-session + Live View + save-browser-session-profile
+        |
+        v
+(2) agent-browser：手動驗證可用
+    - open https://x.com/home --timeout 30000
+        |
+        v
+(3) 讓 Agent 產生「給自己用的 Skill」
+    - 寫 skills/<skill-name>/SKILL.md
+    - 把必要的 env vars / commands / guardrails 寫清楚
+        |
+        v
+(4) 開一個新的 agent session
+    - 在新 session 只依賴該 Skill
+    - 呼叫 skill 的 Quick Start / recipe
+    - 驗證能正確進入 https://x.com/home
+```
+
+### 8.2 SKILL.md 建議內容（最小集合）
+
+可參考：`docs/core/skills-system.md`（Skill 打包與 SKILL.md 撰寫規範）。
+
+你的 Skill（例如 `agentcore-x` / `twitter`）至少要包含：
+
+- **What it does**：用 AgentCore + `agent-browser` 開啟 X（`x.com/home`），並確保使用持久化 profile。
+- **Prerequisites**：
+  - `agent-browser` 已安裝且版本支援 `-p agentcore`
+  - AWS credentials / SSO 已登入
+  - IAM 權限（本文件 1.3 節）
+  - `<AGENTCORE_PROFILE_ID>` 已按第 5 節流程完成保存
+- **Quick Start（可直接複製）**：
+  - 建議固定帶 `--timeout 30000 2>&1`
+  - 明確要求：先 `agent-browser close` 再開，避免殘留 session
+- **Safety / guardrails**：
+  - 不要在公開管道貼 `sessionId` / 任何含帳號識別的輸出
+  - 如果要做發文/按讚等動作，需先詢問或限定在 dry-run
+- **Troubleshooting**：
+  - 403 → IAM 權限
+  - 被導到 login flow → profile 未保存 / session 失效 / timeout 太短
+
+### 8.3 新 session 驗證（最重要）
+
+完成 Skill 後，請務必開一個全新 agent session（乾淨上下文）做驗證：
+
+- 讓 Agent 僅依 Skill 的 Quick Start 執行
+- 觀察是否成功進入 `https://x.com/home`
+- 若失敗，再回頭補齊 Skill 的 prerequisites / commands / timeout / close 流程
+
 | 變數 | 說明 | 預設 |
 |---|---|---|
 | `AGENTCORE_REGION` | AgentCore region（也會 fallback `AWS_REGION` / `AWS_DEFAULT_REGION`） | `us-east-1` |
@@ -326,9 +384,9 @@ agent-browser -p agentcore open https://x.com/home --timeout 30000 2>&1
 
 ---
 
-## 8. Troubleshooting
+## 9. Troubleshooting
 
-### 8.1 `Failed to start AgentCore browser session` / 403 / Forbidden
+### 9.1 `Failed to start AgentCore browser session` / 403 / Forbidden
 
 - 通常是 **AWS credentials 不正確** 或 **沒有 Bedrock AgentCore 權限**。
 - 請先用 AWS CLI 確認你目前身份：
@@ -339,13 +397,13 @@ aws sts get-caller-identity
 
 > 注意：此命令輸出會包含 AWS Account / ARN 等識別資訊；若要貼到公開 issue/PR，請先打碼或移除敏感欄位。
 
-### 8.2 CDP 連線失敗（`Failed to connect to AgentCore browser session via CDP`）
+### 9.2 CDP 連線失敗（`Failed to connect to AgentCore browser session via CDP`）
 
 - 常見原因：region 不對、網路限制、或 session 啟動後立刻失效。
 - 先確認你設定的 `AGENTCORE_REGION` 正確。
 - 看 `Live View` 連結能否打開（AWS Console）。
 
-### 8.3 忘了 close，session 沒有 stop
+### 9.3 忘了 close，session 沒有 stop
 
 - 建議每次用完都跑 `agent-browser close`。
 - 若你在程式/腳本中使用，務必做 try/finally 確保 close 被呼叫。
