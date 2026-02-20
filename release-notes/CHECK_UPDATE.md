@@ -50,6 +50,14 @@
 ```
 
 
+## 設計決策：為何選擇 OS crond + Kiro CLI
+
+我們選擇 **OS crond + Kiro CLI** 而非 OpenClaw 內建的 heartbeats 機制，原因是可靠性：
+
+- crond 是 OS 層級的排程，不依賴 OpenClaw gateway 是否正常運行
+- 若 gateway 當機或重啟中，heartbeats 會靜默失敗；crond 則獨立運作不受影響
+- Kiro CLI 可在 gateway 異常時仍執行檢查，並透過 Telegram 通知 owner
+
 ## 1. 版本檢查與自動建立 Issue
 
 比對本機安裝版本與 npm 最新版本，若有新版本則自動建立 release notes issue。
