@@ -142,9 +142,10 @@ Use star ratings to indicate importance:
 1. **Review GitHub releases first** - Always check the official GitHub releases for the target version
 2. **Sort by importance** - Order items by star rating (most important first)
 3. **Include GitHub link** - Add direct link to the release in the header
-4. **Optional: small ASCII diagrams** - For particularly impactful changes, you may include a short ` ```text ` ASCII block diagram under the item to illustrate architecture/flow.
-   - Keep it brief (roughly 5–20 lines) and only for a few top items.
-   - Diagrams should explain, not replace, 用途/解決問題/影響。
+4. **Optional: flow charts** - For particularly impactful changes, you may include a short ` ```text ` flow chart under the item to illustrate architecture/flow.
+   - 偏好流程圖（flow chart）而非靜態方塊圖（box diagram）。使用 `─►`、`▼`、`▲` 箭頭與 `┌┐└┘│─` 邊框繪製。
+   - Keep it brief (roughly 5–20 lines) and only for a few top items (2–3 per release).
+   - Flow charts should explain, not replace, 用途/解決問題/影響。
 5. **Use markdown tables** - For summary and complex information
 6. **Proofread** - Ensure all PR links are correct and descriptions are accurate
 
