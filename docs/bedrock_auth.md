@@ -193,7 +193,15 @@ When you type `/new` in Telegram, you should see:
 └─────────────────────────────────┴───────────────────────────────────────────┘
 ```
 
-> 💡 SSO is the recommended approach: no plaintext tokens stored, auto-expires in 12 hours, and uses least-privilege permissions. The only trade-off is running `aws sso login --profile bedrock-only` once per day.
+> 💡 SSO is the recommended approach: no plaintext AWS access keys stored and supports least-privilege permissions.
+>
+> ⚠️ **Important nuance (observed in practice):** the OIDC **SSO access token** stored under `~/.aws/sso/cache/*.json` commonly has an `expiresAt` around **~1 hour**. This is normal.
+>
+> What matters operationally is whether the AWS CLI can **refresh** it automatically (via refresh token). When refresh fails you’ll see errors like:
+>
+> - `Token has expired and refresh failed`
+>
+> **Best practice:** don’t page humans just because TTL is low; page only when refresh fails. See `docs/troubleshooting.md` for a probe-first cron pattern.
 
 ## Reference
 

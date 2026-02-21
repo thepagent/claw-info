@@ -86,26 +86,48 @@ openclaw gateway restart
 
 ---
 
-## 5) AWS SSO / Bedrock Token expired
+## 5) AWS SSO / Bedrock Token expired（SSO refresh failed）
 
-症狀：呼叫 Bedrock 的模型時失敗，提示 token expired。
+常見現象：
 
-修復：
+- `aws sts get-caller-identity --profile bedrock-only` 失敗
+- 或呼叫 Bedrock 時失敗，並看到類似錯誤：
+  - `Token has expired and refresh failed`
+  - `Error when retrieving token from sso`
+
+### 重要觀念
+
+- `~/.aws/sso/cache/*.json` 裡的 **OIDC access token** `expiresAt` 常見約 **~1 小時**，屬正常。
+- 真正需要你介入的是：**access token 過期後，refresh token 無法自動刷新**（也就是 refresh failed）。
+
+### 修復（手動 re-auth）
 
 ```bash
-aws sso login
+aws sso login --profile bedrock-only
 ```
 
-（若你有 profile）
+（headless 環境可用 device code）
 
 ```bash
-aws sso login --profile <name>
+aws sso login --profile bedrock-only --use-device-code --no-browser
 ```
 
-預防：
+### 預防（建議：probe-first cron）
 
-- 用 cron 每小時跑一次 refresh 腳本（如果你有，例如 `sso-refresh.sh`）
+與其用 TTL 低就通知（會很吵），建議改成「先 probe，再決定要不要 re-auth」：
 
+- cron 每 10 分鐘跑一次
+- 先跑：
+  - `aws sts get-caller-identity --profile bedrock-only`
+- 只有在 probe 失敗且錯誤屬 token/refresh 類型時，才觸發 `aws sso login` 並發通知
+
+範例 crontab：
+
+```cron
+*/10 * * * * /path/to/sso-refresh.sh >> /tmp/sso-refresh.log 2>&1
+```
+
+> Tips：cron 的 PATH 跟互動式 shell 不同，script 內若要呼叫 `openclaw` 發 Telegram 訊息，建議用 openclaw 絕對路徑或在 script 開頭設定 PATH。
 ---
 
 ## 6) Auto-merge 沒動（PR 已 approved 但沒合）
