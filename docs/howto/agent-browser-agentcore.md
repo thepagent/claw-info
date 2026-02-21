@@ -401,6 +401,9 @@ agent-browser close
 
 此時可改用 **AWS CLI 先建立 session**（拿到 `sessionId`），再自行組出 Live View URL 供手動觀察/排障。
 
+- `<AGENTCORE_PROFILE_ID>`：AgentCore Browser 的 *profileIdentifier*（用來做 cookies/localStorage persistence），**不是** AWS CLI 的 `--profile`。
+- `<AWS_PROFILE_NAME>`：你本機 `~/.aws/config` / `~/.aws/credentials` 的 profile 名稱（用來選 AWS credentials），如果你是用環境變數或 role，也可以不帶。
+
 前置：建議安裝 `jq`（用來抽 `sessionId`）。
 
 ```bash
