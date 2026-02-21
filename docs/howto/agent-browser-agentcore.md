@@ -71,7 +71,7 @@ Profile persistence (cookies/localStorage)
                 v
 ┌──────────────────────────────────────────────────────────────────────┐
 │ (2) agent-browser：驗證 CLI 能穩定進入 https://x.com/home            │
-│     agent-browser -p agentcore open ... --timeout 30000              │
+│     agent-browser -p agentcore open ...                              │
 └───────────────┬──────────────────────────────────────────────────────┘
                 │
                 v
@@ -112,7 +112,7 @@ agent-browser install
 
 # 3) 連 AWS Bedrock AgentCore Browser（需要 AWS credentials）
 export AGENTCORE_REGION=us-east-1
-agent-browser -p agentcore open https://x.com/home --timeout 30000 2>&1
+agent-browser -p agentcore open https://x.com/home
 
 # 4) 收尾
 agent-browser close
@@ -222,8 +222,8 @@ aws bedrock-agentcore start-browser-session \
 
 #### 如何讓使用者/Agent 自行確認
 
-- 直接跑一次（建議加 timeout，避免網站載入/跳轉較慢時誤判）：
-  - `agent-browser -p agentcore open https://x.com/home --timeout 30000 2>&1`
+- 直接跑一次：
+  - `agent-browser -p agentcore open https://x.com/home`
   - 若缺權限通常會看到 `403 Forbidden` 或類似 `Failed to start AgentCore browser session`。
 - 若你們組織允許，可用 **AWS Policy Simulator**（Console）針對上述 actions 測試是否 Allow。
 
@@ -372,15 +372,19 @@ aws bedrock-agentcore save-browser-session-profile \
 
 ```bash
 export AGENTCORE_REGION=us-east-1
-agent-browser -p agentcore open https://x.com/home --timeout 30000 2>&1
+agent-browser -p agentcore open https://x.com/home
 ```
 
-> 註：`--timeout 30000` 可避免網站載入/跳轉較慢時，CLI 早回報造成誤判；`2>&1` 則方便把 stderr（包含 Live View）一併收集。
+成功時 CLI 會直接輸出 Session ID 和 Live View URL：
 
-成功時通常會看到類似輸出（PR 內會印到 stderr）：
+```
+✓ (6) Home / X
+  https://x.com/home
+Session: 01KJ0A6901JCR6J4SQ98D8XD4X
+Live View: https://us-east-1.console.aws.amazon.com/bedrock-agentcore/browser/aws.browser.v1/session/01KJ0A6901JCR6J4SQ98D8XD4X#
+```
 
-- `Session: <session-id>`
-- `Live View: https://<region>.console.aws.amazon.com/...`
+> 註：AgentCore provider 的預設 timeout 已從 10 秒修正為 60 秒（與其他 provider 一致），不再需要 `--timeout 30000` workaround。Session ID 和 Live View URL 現在透過 daemon socket response 傳回 CLI 端（stdout + stderr），不再只印在 daemon 的 stderr。
 
 你可以再確認能控制頁面：
 
@@ -395,9 +399,11 @@ agent-browser snapshot
 agent-browser close
 ```
 
-### 6.2（可選）如果 `agent-browser open` 沒印出 sessionId / Live View：用 AWS CLI 先開 session 再組 URL
+### 6.2（備用）如果 CLI 沒印出 sessionId / Live View：用 AWS CLI 先開 session 再組 URL
 
-有些情況下（版本差異、輸出被 wrapper 吃掉、或你只收集 stdout 沒收 stderr…），你可能看不到 `Session:` / `Live View:` 的輸出；此時即使 `agent-browser -p agentcore open ...` 成功建立了 session，你也不一定能直接得知 `sessionId`。
+> 正常情況下 Section 6.1 的 CLI 輸出已包含 Session ID 和 Live View URL。以下方法僅作為備用方案（例如舊版 CLI、輸出被 wrapper 吃掉等情境）。
+
+有些情況下（版本差異、輸出被 wrapper 吃掉、或你只收集 stdout 沒收 stderr…），你可能看不到 `Session:` / `Live View:` 的輸出。
 
 此時可改用 **AWS CLI 先建立 session**（拿到 `sessionId`），再自行組出 Live View URL 供手動觀察/排障。
 
@@ -424,7 +430,7 @@ echo "SessionId: ${SESSION_ID}"
 echo "https://<AGENTCORE_REGION>.console.aws.amazon.com/bedrock-agentcore/browser/aws.browser.v1/session/${SESSION_ID}#"
 
 # 3) Connect and navigate with agent-browser (will reuse your env like AGENTCORE_REGION)
-agent-browser -p agentcore open "https://x.com/home" --timeout 30000
+agent-browser -p agentcore open "https://x.com/home"
 ```
 
 > 安全提醒：請勿把 `sessionId` / Live View URL 貼到公開 issue/PR；這類資訊通常足以用來觀察該 session。
@@ -435,7 +441,7 @@ agent-browser -p agentcore open "https://x.com/home" --timeout 30000
 export AGENTCORE_REGION=us-east-1
 export AGENTCORE_PROFILE_ID=my-profile-id
 
-agent-browser -p agentcore open https://x.com/home --timeout 30000 2>&1
+agent-browser -p agentcore open https://x.com/home
 ```
 
 > `AGENTCORE_PROFILE_ID` 會讓 AgentCore 用指定 profile 保存 cookies / localStorage。
@@ -458,7 +464,7 @@ agent-browser -p agentcore open https://x.com/home --timeout 30000 2>&1
         |
         v
 (2) agent-browser：手動驗證可用
-    - open https://x.com/home --timeout 30000
+    - open https://x.com/home
         |
         v
 (3) 讓 Agent 產生「給自己用的 Skill」
@@ -485,7 +491,6 @@ agent-browser -p agentcore open https://x.com/home --timeout 30000 2>&1
   - IAM 權限（本文件 1.3 節）
   - `<AGENTCORE_PROFILE_ID>` 已按第 5 節流程完成保存
 - **Quick Start（可直接複製）**：
-  - 建議固定帶 `--timeout 30000 2>&1`
   - 明確要求：先 `agent-browser close` 再開，避免殘留 session
 - **Safety / guardrails**：
   - 不要在公開管道貼 `sessionId` / 任何含帳號識別的輸出
@@ -548,5 +553,5 @@ agent-browser connect "wss://..." --headers '{"Authorization":"AWS4-HMAC-SHA256.
 但大多數情況下建議用：
 
 ```bash
-agent-browser -p agentcore open https://x.com/home --timeout 30000 2>&1
+agent-browser -p agentcore open https://x.com/home
 ```
