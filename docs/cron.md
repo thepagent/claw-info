@@ -363,11 +363,49 @@ Cron 作業失敗時的行為：
 
 ---
 
+## OS cron 與 OpenClaw cron 比較
+
+### 比較表
+
+| 項目 | OS cron | OpenClaw cron |
+|------|---------|---------------|
+| Gateway 掛掉時仍能執行 | ✅ 完全獨立於 gateway，即使 openclaw 服務掛掉仍正常執行 | ❌ scheduler 在 gateway 程序內，gateway 掛掉則排程停止 |
+| 執行歷史記錄 | ❌ 需自行將 stdout/stderr 導向 log 檔，無結構化查詢 | ✅ `openclaw cron runs <id>` 可查每次執行時間、狀態、duration |
+| 集中管理 / 可見性 | ❌ 分散在各機器的 crontab，需 `crontab -l` 才能查看 | ✅ `openclaw cron list` 一覽所有排程，含下次執行時間與狀態 |
+| 即時觸發測試 | ❌ 需等待下一個時間點，或手動執行腳本 | ✅ `openclaw cron run <id>` 立即觸發，方便除錯 |
+| Agent 整合 / 工具呼叫 | ❌ 純 shell，無法呼叫 LLM 工具、memory、browser 等 | ✅ agentTurn 可使用完整工具集，適合需要 AI 判斷的任務 |
+| 直接執行 shell script | ✅ 直接執行，無中間層，行為完全可預測 | ⚠️ 透過 agent exec 間接執行，需在 message 明確指定 `and nothing else` |
+| 不依賴 LLM 判斷 | ✅ 邏輯完全由 shell script 控制，不受模型行為影響 | ⚠️ agentTurn 仍由 LLM 解讀 message，有偏離指令的風險 |
+| Telegram 通知整合 | ⚠️ 需在腳本內自行呼叫 `openclaw message send` | ✅ 原生支援 `--announce`，結果自動推送至指定頻道 |
+
+### OS cron 還是 OpenClaw cron？何時用哪個
+
+- **用 OS cron**：任務需在 gateway 掛掉時仍能執行（如 SSO refresh、gateway 健康監控）
+- **用 OpenClaw cron**：任務依賴 gateway 運作（如版本檢查通知、需要 agent 判斷的任務）
+
+### 當邏輯全在 shell script 時：OpenClaw cron + 強制執行模式
+
+當任務邏輯完全封裝在 shell script 內，不需要 AI 判斷，只需要確實執行時，可使用 OpenClaw cron 搭配明確指令來降低 agent 偏離風險：
+
+```bash
+openclaw cron edit <id> --message "Run bash /path/to/script.sh and nothing else"
+```
+
+這樣做的好處：
+- 保留 OpenClaw cron 的可見性與歷史記錄優勢
+- 透過明確的 `and nothing else` 限制 agent 自由發揮空間
+- 適用於：版本檢查、定期清理、狀態回報等邏輯已固定的任務
+
+> ⚠️ 注意：agent 仍有偏離可能，若需要 100% 確實執行且不依賴 gateway，應改用 OS cron。
+
+---
+
 ## 更新紀錄
 
+- **2026-02-23**：新增「OS cron 與 OpenClaw cron 比較」章節
 - **2026-02-17**：新增「已知問題」章節
 - **2026-02-16**：建立文件，涵蓋核心概念與範例
 
 ---
 
-*最後更新：2026-02-17*
+*最後更新：2026-02-23*
