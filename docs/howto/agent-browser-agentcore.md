@@ -281,12 +281,6 @@ cargo build --release
 cd ..
 ```
 
-> **已知問題**：PR #397 的 `cli/src/main.rs` 中 `fn main()` 缺少 `Result` 回傳型別，會導致編譯失敗。修正方式：
->
-> 1. 將 `fn main() {` 改為 `fn main() -> Result<(), Box<dyn std::error::Error>> {`
-> 2. 將函式內所有 bare `return;` 改為 `return Ok(());`
-> 3. 在函式結尾加上 `Ok(())`
-
 ### 3.3 安裝到全域
 
 ```bash
