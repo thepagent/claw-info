@@ -357,21 +357,44 @@ LATEST=$($NPM show openclaw version)
 
 ### Q5: Cron job exec 一直卡在「需要批准」？
 
-**A:** `host=gateway` 時，exec 預設需要人工批准（`tools.exec.ask=on-miss`）。在自動化場景下需關閉：
+**A:** `host=gateway` 時，exec 預設需要人工批准（`tools.exec.ask=on-miss`）。建議用 allowlist 白名單腳本路徑，而非全域關閉安全機制：
+
+**推薦做法：allowlist 白名單（較安全）**
+
+編輯 `~/.openclaw/exec-approvals.json`，將腳本目錄加入白名單：
+
+```json
+{
+  "agents": {
+    "main": {
+      "security": "allowlist",
+      "ask": "off",
+      "allowlist": [
+        { "pattern": "/home/<user>/.openclaw/scripts/*" }
+      ]
+    }
+  }
+}
+```
+
+全域維持嚴格設定：
 
 ```bash
-openclaw config set tools.exec.ask off
-openclaw config set tools.exec.security full
+openclaw config set tools.exec.host gateway
+openclaw config set tools.exec.security allowlist
+openclaw config set tools.exec.ask on-miss
 systemctl --user restart openclaw-gateway.service
 ```
+
+這樣只有 `scripts/` 下的腳本可不經批准執行，其他指令一律拒絕。
 
 | 設定 | 說明 |
 |------|------|
 | `tools.exec.host` | `gateway`：在 gateway host 執行（可存取完整 PATH） |
-| `tools.exec.ask` | `off`：不要求人工批准；`on-miss`（預設）：allowlist 未命中時要求批准 |
-| `tools.exec.security` | `full`：不受 allowlist 限制；`allowlist`（預設）：只允許白名單內的指令 |
+| `tools.exec.ask` | `off`：不要求批准；`on-miss`（預設）：allowlist 未命中時要求批准 |
+| `tools.exec.security` | `allowlist`：只允許白名單內的指令；`full`：允許任意指令（不建議） |
 
-> ⚠️ `security=full` 表示 exec 可執行任意指令，僅適用於受信任的自動化腳本。
+> ⚠️ 避免使用 `security=full`，它允許 agent 執行任意指令。
 
 ### Q6: Cron job 跑完後 agent 把結果 announce 到 Telegram，但我只想讓腳本自己控制通知？
 
