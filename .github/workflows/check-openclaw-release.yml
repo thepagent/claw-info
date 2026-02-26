@@ -16,10 +16,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          raw=$(gh api repos/openclaw/openclaw/releases/latest --jq '.tag_name' | sed 's/^v//')
+          tag_name=$(gh api repos/openclaw/openclaw/releases/latest --jq '.tag_name')
+          raw=$(echo "$tag_name" | sed 's/^v//')
           version=$(echo "$raw" | sed 's/-[0-9]*$//')
+          echo "tag_name=$tag_name" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "Latest version: $version (raw: $raw)"
+          echo "Latest version: $version (tag: $tag_name)"
 
       - name: Check if issue already exists
         id: check
@@ -51,7 +53,7 @@ jobs:
 
           Upstream GitHub Release:
 
-          - https://github.com/openclaw/openclaw/releases/tag/v$version
+          - https://github.com/openclaw/openclaw/releases/tag/${{ steps.latest.outputs.tag_name }}
 
           Guidelines:
 
@@ -59,7 +61,7 @@ jobs:
 
           Tasks:
 
-          - Pull changes/changelog from upstream OpenClaw release/tag v$version
+          - Pull changes/changelog from upstream OpenClaw release/tag ${{ steps.latest.outputs.tag_name }}
           - Draft a \`release-notes/\` markdown file in zh-TW
           - Follow guidelines (分類：功能更新/安全性提升/錯誤修復；每項標註⭐；含用途/解決問題/影響)
           - Include link(s) to the upstream GitHub Release
