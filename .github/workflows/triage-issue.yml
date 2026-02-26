@@ -1,0 +1,85 @@
+name: Triage Issue
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issue = context.payload.issue;
+            const title = (issue.title || '').toLowerCase();
+            const body = (issue.body || '').toLowerCase();
+            const text = `${title} ${body}`;
+
+            // Ensure a label exists, creating it if necessary
+            async function ensureLabel(name, color, description) {
+              try {
+                await github.rest.issues.getLabel({ owner, repo, name });
+              } catch (e) {
+                if (e.status === 404) {
+                  await github.rest.issues.createLabel({ owner, repo, name, color, description });
+                } else {
+                  throw e;
+                }
+              }
+            }
+
+            // Determine type label: bug or feature-request
+            const bugKeywords = ['bug', 'error', 'crash', 'broken', 'fix', 'fail', 'problem', 'wrong', 'incorrect', 'regression'];
+            const featureKeywords = ['feat', 'feature', 'enhancement', 'add', 'implement', 'request', 'improve'];
+
+            const isBug = bugKeywords.some(k => text.includes(k));
+            const isFeature = featureKeywords.some(k => text.includes(k));
+
+            let typeLabel;
+            if (isBug && !isFeature) {
+              typeLabel = 'bug';
+            } else if (isFeature && !isBug) {
+              typeLabel = 'feature-request';
+            } else if (isBug && isFeature) {
+              // Both matched — prefer bug
+              typeLabel = 'bug';
+            } else {
+              typeLabel = 'feature-request';
+            }
+
+            // Determine priority label
+            const highKeywords = ['critical', 'urgent', 'blocker', 'blocking', 'severe', 'p0', 'p1'];
+            const lowKeywords = ['minor', 'trivial', 'nice to have', 'low priority', 'p3', 'p4'];
+
+            let priorityLabel;
+            if (highKeywords.some(k => text.includes(k))) {
+              priorityLabel = 'priority: high';
+            } else if (lowKeywords.some(k => text.includes(k))) {
+              priorityLabel = 'priority: low';
+            } else {
+              priorityLabel = 'priority: medium';
+            }
+
+            // Ensure labels exist
+            await ensureLabel('bug', 'd73a4a', 'Something is not working');
+            await ensureLabel('feature-request', 'a2eeef', 'New feature or request');
+            await ensureLabel('priority: high', 'e11d48', 'High priority');
+            await ensureLabel('priority: medium', 'f97316', 'Medium priority');
+            await ensureLabel('priority: low', '84cc16', 'Low priority');
+
+            // Apply labels
+            await github.rest.issues.addLabels({
+              owner,
+              repo,
+              issue_number: issue.number,
+              labels: [typeLabel, priorityLabel],
+            });
+
+            console.log(`Labeled issue #${issue.number} with: ${typeLabel}, ${priorityLabel}`);
