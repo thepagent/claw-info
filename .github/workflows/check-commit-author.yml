@@ -18,7 +18,7 @@ jobs:
       - name: Check commit authors
         run: |
           echo "Checking PR commits for valid authors..."
-          INVALID_COMMITS=$(git log origin/main..HEAD --format='%an <%ae>' | grep -vE "thepagent|copilot" || true)
+          INVALID_COMMITS=$(git log origin/main..HEAD --format='%an <%ae>' | grep -ivE "thepagent|copilot" || true)
           
           if [ -n "$INVALID_COMMITS" ]; then
             echo "❌ Found commits with invalid author:"
