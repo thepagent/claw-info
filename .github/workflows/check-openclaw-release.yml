@@ -1,0 +1,76 @@
+name: Check OpenClaw New Release
+
+on:
+  schedule:
+    - cron: "0 * * * *"  # Every hour
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Get latest OpenClaw version
+        id: latest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          raw=$(gh api repos/openclaw/openclaw/releases/latest --jq '.tag_name' | sed 's/^v//')
+          version=$(echo "$raw" | sed 's/-[0-9]*$//')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Latest version: $version (raw: $raw)"
+
+      - name: Check if issue already exists
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version="${{ steps.latest.outputs.version }}"
+          title="Release notes: OpenClaw $version"
+          existing=$(gh issue list \
+            --repo ${{ github.repository }} \
+            --state all \
+            --search "$title" \
+            --json title,url \
+            | python3 -c "
+import json,sys
+issues=json.load(sys.stdin)
+match=[i for i in issues if i['title']=='$title']
+print(match[0]['url'] if match else '')
+")
+          echo "existing=$existing" >> "$GITHUB_OUTPUT"
+          if [ -n "$existing" ]; then
+            echo "Issue already exists: $existing"
+          fi
+
+      - name: Create issue if not exists
+        if: steps.check.outputs.existing == ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version="${{ steps.latest.outputs.version }}"
+          gh issue create \
+            --repo ${{ github.repository }} \
+            --title "Release notes: OpenClaw $version" \
+            --body "Generate release notes markdown for OpenClaw **$version** following our release notes guidelines.
+
+Upstream GitHub Release:
+
+- https://github.com/openclaw/openclaw/releases/tag/v$version
+
+Guidelines:
+
+- \`release-notes/GUIDELINES.md\` (in this repo)
+
+Tasks:
+
+- Pull changes/changelog from upstream OpenClaw release/tag v$version
+- Draft a \`release-notes/\` markdown file in zh-TW
+- Follow guidelines (分類：功能更新/安全性提升/錯誤修復；每項標註⭐；含用途/解決問題/影響)
+- Include link(s) to the upstream GitHub Release
+
+Acceptance:
+
+- New md file committed in claw-info under \`release-notes/\`
+- Issue closed via PR"
