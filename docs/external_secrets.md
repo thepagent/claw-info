@@ -439,96 +439,19 @@ openclaw secrets audit  # plaintext=0 即成功
 
 ---
 
-## 實戰範例：Cloudflare KV (透過 exec provider - 尚未驗證)
+## Cloudflare Workers Secrets 介接注意事項
 
-若您的敏感資訊存放在 Cloudflare KV 中，可透過範例腳本搭配 `exec` provider 介接。
+Cloudflare Workers 提供內建的 [Secrets](https://developers.cloudflare.com/workers/configuration/secrets/) 機制（透過 `wrangler secret put` 設定），資料加密存放，僅於 Worker runtime 內以環境變數形式可讀。這是 Cloudflare 官方推薦的秘密管理方式。
 
-> ⚠️ 注意：以下範例**尚未在實際環境驗證**。請先依「驗證」段落手動跑過一次 wrapper script，確認能輸出正確的 exec protocol v1 JSON，再交由 openclaw 啟動時解析。
+### 挑戰
 
-### 前置需求（Prereqs）
+- **Secrets 僅限 runtime 讀取**：Cloudflare Secrets 設計上只能在 Worker 執行時存取，本地 CLI 環境無法直接透過 `wrangler` 讀取 secret 明文值，因此難以直接作為 `exec` provider 的資料來源。
+- **KV 並非秘密管理工具**：雖然技術上可透過 KV 存放並以 `wrangler kv:key get` 讀取，但 KV 資料未加密存放，任何有讀取權限者皆可見明文，不建議用於存放敏感資訊。
+- **API 限制**：Cloudflare API 的 secrets endpoint 不回傳明文值，僅能列出 secret 名稱。
 
-- 已安裝並完成登入 [wrangler](https://developers.cloudflare.com/workers/wrangler/install-and-update/)
-- 已有可讀取 KV 的權限
-- 已在你的 wrangler 專案中設定 KV namespace binding（以下以 `OPENCLAW_SECRETS` 為例）
+### 建議
 
-### exec protocol v1 輸出契約（很重要）
-
-- wrapper script **stdout** 必須輸出 JSON：`{"protocolVersion":1,"values":{...}}`
-- openclaw 會以 `id` 當作 key，從 `values[id]` 取出字串值
-- 建議將 log 輸出到 **stderr**，避免污染 stdout JSON
-
-### 1. 建立 exec provider 封裝腳本
-
-建立 `$HOME/bin/cf-kv-wrapper.sh`：
-
-```bash
-cat > "$HOME/bin/cf-kv-wrapper.sh" << 'EOF'
-#!/bin/bash
-set -euo pipefail
-
-KEY=${1:-cf-kv-apikey}
-KV_BINDING=${KV_BINDING:-OPENCLAW_SECRETS}
-KV_ITEM=${KV_ITEM:-my-api-key}
-
-# 從特定的 KV Namespace (BINDING) 讀取值並以 exec protocol v1 格式輸出
-VALUE=$(wrangler kv:key get --binding="$KV_BINDING" "$KV_ITEM")
-
-python3 - <<PY
-import json, os
-key = os.environ.get("KEY", "cf-kv-apikey")
-value = os.environ.get("VALUE", "")
-print(json.dumps({"protocolVersion": 1, "values": {key: value}}))
-PY
-EOF
-chmod 700 "$HOME/bin/cf-kv-wrapper.sh"
-```
-
-> 註：上例使用 `python3` 產出 JSON，避免值中含特殊字元時破壞 JSON。
-
-### 2. 驗證（建議先做）
-
-```bash
-KV_BINDING=OPENCLAW_SECRETS KV_ITEM=my-api-key "$HOME/bin/cf-kv-wrapper.sh" | python3 -m json.tool
-```
-
-確認輸出包含：
-- `protocolVersion: 1`
-- `values.cf-kv-apikey` 為你期望的值
-
-### 3. 設定 exec provider（`openclaw.json`）
-
-```json
-{
-  "secrets": {
-    "providers": {
-      "cf_kv": {
-        "source": "exec",
-        "command": "$HOME/bin/cf-kv-wrapper.sh",
-        "timeoutMs": 5000
-      }
-    }
-  }
-}
-```
-
-### 4. 設定 SecretRef（`openclaw.json`）
-
-```json
-{
-  "models": {
-    "providers": {
-      "cloudflare-provider": {
-        "baseUrl": "https://api.cloudflare.com/client/v4",
-        "apiKey": {
-          "source": "exec",
-          "provider": "cf_kv",
-          "id": "cf-kv-apikey"
-        }
-      }
-    }
-  }
-}
-```
+若需在本地 openclaw 啟動時注入 Cloudflare 相關的 API key，建議使用 `env` source 或系統 keychain 等本地秘密管理方案，而非繞道 Cloudflare 遠端服務。
 
 ---
 
