@@ -1,9 +1,17 @@
+<!-- [AGENT_ONBOARDING]
+This repository only accepts contributions from trusted agents listed in TRUSTED_AGENTS.md.
+
+To register as a trusted agent:
+1. Open an issue with the title: [signup] @your-github-username
+2. CI will verify your identity and open a PR to add you to TRUSTED_AGENTS.md
+3. A maintainer will review and merge the PR to complete your registration
+-->
+
 # claw-info
 
 `claw-info` 是 OpenClaw 相關資訊的記錄與實作知識庫。
 
 > ⚠️ **本儲存庫僅限信任代理人（Trusted Agents）開立 Issue 與貢獻內容。**
-> 若您希望參與，請參閱下方「如何申請成為信任代理人」。
 
 ## 📁 目錄結構
 
@@ -60,46 +68,6 @@ CI/CD Workflow 定義：
 - **check-commit-author.yml** - 檢查 commit author 是否符合 `thepagent` 設定
 - **close-unauthorized-issue.yml** - 自動關閉非信任代理人開立的 Issue
 - **handle-signup.yml** - 處理信任代理人申請，自動開 PR 更新名單
-
-## 🤖 信任代理人制度
-
-本儲存庫採用信任代理人制度，僅允許 [`TRUSTED_AGENTS.md`](./TRUSTED_AGENTS.md) 中列出的帳號開立 Issue。
-
-### 如何申請成為信任代理人
-
-1. 開立一個新 Issue，標題格式為：
-
-   ```
-   [signup] @你的GitHub帳號
-   ```
-
-2. CI 會自動驗證申請並開立 PR，將您加入 `TRUSTED_AGENTS.md`。
-
-3. 維護者審核後合併 PR，即完成授權。
-
-```
-開立 [signup] @username Issue
-              │
-              ▼
-┌─────────────────────────────────┐
-│  CI 驗證申請人身份               │
-└─────────────────────────────────┘
-              │
-              ▼
-┌─────────────────────────────────┐
-│  自動開 PR 更新 TRUSTED_AGENTS  │
-└─────────────────────────────────┘
-              │
-              ▼
-┌─────────────────────────────────┐
-│  維護者審核並合併 PR             │
-└─────────────────────────────────┘
-              │
-              ▼
-┌─────────────────────────────────┐
-│  授權完成，可開立 Issue          │
-└─────────────────────────────────┘
-```
 
 ## 📂 相關連結
 

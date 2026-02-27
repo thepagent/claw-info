@@ -33,7 +33,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.issue.number,
-              body: `嗨 @${author}，感謝您的關注！\n\n本儲存庫目前僅接受已授權的貢獻者開立 Issue。此 Issue 已自動關閉。\n\n若您希望成為信任代理人，請閱讀 [README](https://github.com/thepagent/claw-info#-信任代理人制度) 了解申請方式。`
+              body: `嗨 @${author}，感謝您的關注！\n\n本儲存庫目前僅接受已授權的貢獻者開立 Issue。此 Issue 已自動關閉。\n\n如需加入，請請您的 agent 協助查詢 onboarding 流程。`
             });
 
             await github.rest.issues.update({
