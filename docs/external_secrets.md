@@ -187,6 +187,69 @@ openclaw secrets reload     # 執行期熱重載（原子性，失敗保留舊�
 
 ---
 
+## 實戰範例：環境變數（最簡單）
+
+> 版本要求：v2026.2.26+
+
+即使使用 `env` source，也**必須先定義 `secrets.providers` 區塊**，否則會報錯：
+```
+models.providers.<name>.apiKey: Invalid input
+```
+
+### 完整設定範例
+
+```json
+{
+  "secrets": {
+    "providers": {
+      "env-provider": {
+        "source": "env"
+      }
+    }
+  },
+  "models": {
+    "providers": {
+      "ollama-cloud": {
+        "baseUrl": "https://ollama.com/v1",
+        "apiKey": {
+          "source": "env",
+          "provider": "env-provider",
+          "id": "OPENAI_API_KEY"
+        },
+        "api": "openai-completions"
+      }
+    }
+  }
+}
+```
+
+SecretRef 三個必填欄位：
+- `source`: `"env"`
+- `provider`: 對應 `secrets.providers` 中的 key
+- `id`: 環境變數名稱
+
+### Kubernetes Secret 整合
+
+```bash
+# 建立 Secret
+kubectl create secret generic openclaw-env-secret -n openclaw \
+  --from-literal=OPENAI_API_KEY=your-api-key-here
+```
+
+```yaml
+# Helm values.yaml
+app-template:
+  controllers:
+    main:
+      containers:
+        main:
+          envFrom:
+            - secretRef:
+                name: openclaw-env-secret
+```
+
+---
+
 ## 實戰範例：AWS Secrets Manager
 
 以下為將 `ollama-cloud` provider 的 `apiKey` 遷移至 AWS Secrets Manager 的完整流程。
