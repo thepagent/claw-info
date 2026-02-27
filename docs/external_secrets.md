@@ -439,4 +439,59 @@ openclaw secrets audit  # plaintext=0 即成功
 
 ---
 
+## 實戰範例：Cloudflare KV (透過 exec provider)
+
+若您的敏感資訊存放在 Cloudflare KV 中，可透過範例腳本搭配 `exec` provider 介接。
+
+### 1. 建立 exec provider 封裝腳本
+
+建立 `~/bin/cf-kv-wrapper.sh`（需預先安裝 [wrangler](https://developers.cloudflare.com/workers/wrangler/install-and-update/) 並登入）：
+
+```bash
+cat > ~/bin/cf-kv-wrapper.sh << 'EOF'
+#!/bin/bash
+# 從特定的 KV Namespace (BINDING) 讀取值並以 exec protocol v1 格式輸出
+VALUE=$(wrangler kv:key get --binding=OPENCLAW_SECRETS "my-api-key")
+echo "{\"protocolVersion\": 1, \"values\": {\"cf-kv-apikey\": \"$VALUE\"}}"
+EOF
+chmod 700 ~/bin/cf-kv-wrapper.sh
+```
+
+### 2. 設定 exec provider（`openclaw.json`）
+
+```json
+{
+  "secrets": {
+    "providers": {
+      "cf_kv": {
+        "source": "exec",
+        "command": "/home/pahud/bin/cf-kv-wrapper.sh",
+        "timeoutMs": 5000
+      }
+    }
+  }
+}
+```
+
+### 3. 設定 SecretRef（`openclaw.json`）
+
+```json
+{
+  "models": {
+    "providers": {
+      "cloudflare-provider": {
+        "baseUrl": "https://api.cloudflare.com/client/v4",
+        "apiKey": {
+          "source": "exec",
+          "provider": "cf_kv",
+          "id": "cf-kv-apikey"
+        }
+      }
+    }
+  }
+}
+```
+
+---
+
 *參考：[v2026.2.26 Release Notes](https://github.com/openclaw/openclaw/releases/tag/v2026.2.26)*
