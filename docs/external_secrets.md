@@ -439,25 +439,63 @@ openclaw secrets audit  # plaintext=0 即成功
 
 ---
 
-## 實戰範例：Cloudflare KV (透過 exec provider)
+## 實戰範例：Cloudflare KV (透過 exec provider - 尚未驗證)
 
 若您的敏感資訊存放在 Cloudflare KV 中，可透過範例腳本搭配 `exec` provider 介接。
 
+> ⚠️ 注意：以下範例**尚未在實際環境驗證**。請先依「驗證」段落手動跑過一次 wrapper script，確認能輸出正確的 exec protocol v1 JSON，再交由 openclaw 啟動時解析。
+
+### 前置需求（Prereqs）
+
+- 已安裝並完成登入 [wrangler](https://developers.cloudflare.com/workers/wrangler/install-and-update/)
+- 已有可讀取 KV 的權限
+- 已在你的 wrangler 專案中設定 KV namespace binding（以下以 `OPENCLAW_SECRETS` 為例）
+
+### exec protocol v1 輸出契約（很重要）
+
+- wrapper script **stdout** 必須輸出 JSON：`{"protocolVersion":1,"values":{...}}`
+- openclaw 會以 `id` 當作 key，從 `values[id]` 取出字串值
+- 建議將 log 輸出到 **stderr**，避免污染 stdout JSON
+
 ### 1. 建立 exec provider 封裝腳本
 
-建立 `~/bin/cf-kv-wrapper.sh`（需預先安裝 [wrangler](https://developers.cloudflare.com/workers/wrangler/install-and-update/) 並登入）：
+建立 `$HOME/bin/cf-kv-wrapper.sh`：
 
 ```bash
-cat > ~/bin/cf-kv-wrapper.sh << 'EOF'
+cat > "$HOME/bin/cf-kv-wrapper.sh" << 'EOF'
 #!/bin/bash
+set -euo pipefail
+
+KEY=${1:-cf-kv-apikey}
+KV_BINDING=${KV_BINDING:-OPENCLAW_SECRETS}
+KV_ITEM=${KV_ITEM:-my-api-key}
+
 # 從特定的 KV Namespace (BINDING) 讀取值並以 exec protocol v1 格式輸出
-VALUE=$(wrangler kv:key get --binding=OPENCLAW_SECRETS "my-api-key")
-echo "{\"protocolVersion\": 1, \"values\": {\"cf-kv-apikey\": \"$VALUE\"}}"
+VALUE=$(wrangler kv:key get --binding="$KV_BINDING" "$KV_ITEM")
+
+python3 - <<PY
+import json, os
+key = os.environ.get("KEY", "cf-kv-apikey")
+value = os.environ.get("VALUE", "")
+print(json.dumps({"protocolVersion": 1, "values": {key: value}}))
+PY
 EOF
-chmod 700 ~/bin/cf-kv-wrapper.sh
+chmod 700 "$HOME/bin/cf-kv-wrapper.sh"
 ```
 
-### 2. 設定 exec provider（`openclaw.json`）
+> 註：上例使用 `python3` 產出 JSON，避免值中含特殊字元時破壞 JSON。
+
+### 2. 驗證（建議先做）
+
+```bash
+KV_BINDING=OPENCLAW_SECRETS KV_ITEM=my-api-key "$HOME/bin/cf-kv-wrapper.sh" | python3 -m json.tool
+```
+
+確認輸出包含：
+- `protocolVersion: 1`
+- `values.cf-kv-apikey` 為你期望的值
+
+### 3. 設定 exec provider（`openclaw.json`）
 
 ```json
 {
@@ -465,7 +503,7 @@ chmod 700 ~/bin/cf-kv-wrapper.sh
     "providers": {
       "cf_kv": {
         "source": "exec",
-        "command": "/home/pahud/bin/cf-kv-wrapper.sh",
+        "command": "$HOME/bin/cf-kv-wrapper.sh",
         "timeoutMs": 5000
       }
     }
@@ -473,7 +511,7 @@ chmod 700 ~/bin/cf-kv-wrapper.sh
 }
 ```
 
-### 3. 設定 SecretRef（`openclaw.json`）
+### 4. 設定 SecretRef（`openclaw.json`）
 
 ```json
 {
