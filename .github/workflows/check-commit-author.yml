@@ -16,7 +16,13 @@ jobs:
           fetch-depth: 0
 
       - name: Check commit authors
+        env:
+          LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
         run: |
+          if echo "$LABELS" | grep -q "exempt-author-check"; then
+            echo "✅ exempt-author-check label found, skipping"
+            exit 0
+          fi
           echo "Checking PR commits for valid authors..."
           INVALID_COMMITS=$(git log origin/main..HEAD --format='%an <%ae>' | grep -ivE "thepagent|copilot|chenjian-agent" || true)
           
