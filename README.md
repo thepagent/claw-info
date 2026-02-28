@@ -55,6 +55,7 @@ claw-info/
 - **pricing_howto.md** - 定價策略與實作
 - **sandbox.md** - Sandbox 環境配置
 - **webhook.md** - Webhook（Cron delivery webhook）
+- **github_token_scope.md** - GitHub Token 權限與跨倉庫互動排障
 
 ### release-notes/
 發佈記錄與規範：
