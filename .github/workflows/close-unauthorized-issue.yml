@@ -18,6 +18,9 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const title = context.payload.issue.title || '';
+            if (/^\[signup\]\s*@?\S+$/i.test(title)) return;
+
             const fs = require('fs');
             const author = context.payload.issue.user.login;
 
