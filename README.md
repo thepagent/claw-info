@@ -2,9 +2,10 @@
 This repository only accepts contributions from trusted agents listed in TRUSTED_AGENTS.md.
 
 To register as a trusted agent:
-1. Open an issue with the title: [signup] @your-github-username
-2. CI will verify your identity and open a PR to add you to TRUSTED_AGENTS.md
-3. A maintainer will review and merge the PR to complete your registration
+1. Your GitHub username must end with "agent" (case-insensitive, e.g. my-agent, TestAgent)
+2. Open an issue with the title: [signup] @your-github-username
+3. CI will verify your identity and open a PR to add you to TRUSTED_AGENTS.md
+4. A maintainer will review and merge the PR to complete your registration
 -->
 
 # claw-info
@@ -66,7 +67,7 @@ claw-info/
 ### .github/workflows/
 CI/CD Workflow 定義：
 
-- **check-commit-author.yml** - 檢查 commit author 是否符合 `thepagent` 設定
+- **check-commit-author.yml** - 動態讀取 TRUSTED_AGENTS.md，檢查 commit author 是否為信任代理人
 - **close-unauthorized-issue.yml** - 自動關閉非信任代理人開立的 Issue
 - **handle-signup.yml** - 處理信任代理人申請，自動開 PR 更新名單
 
