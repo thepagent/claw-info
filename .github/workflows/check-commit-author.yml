@@ -23,13 +23,14 @@ jobs:
             echo "✅ exempt-author-check label found, skipping"
             exit 0
           fi
+          # 動態讀取信任名單，並加入固定系統帳號
+          TRUSTED=$(cat TRUSTED_AGENTS.md | grep -v '^#' | grep -v '^$' | tr '\n' '|' | sed 's/|$//')
+          TRUSTED_PATTERN="thepagent|copilot|github-actions|${TRUSTED}"
           echo "Checking PR commits for valid authors..."
-          INVALID_COMMITS=$(git log origin/main..HEAD --format='%an <%ae>' | grep -ivE "thepagent|copilot|chenjian-agent" || true)
-          
+          INVALID_COMMITS=$(git log origin/main..HEAD --format='%an <%ae>' | grep -ivE "$TRUSTED_PATTERN" || true)
           if [ -n "$INVALID_COMMITS" ]; then
             echo "❌ Found commits with invalid author:"
             echo "$INVALID_COMMITS"
             exit 1
           fi
-          
-          echo "✅ All commits are by 'thepagent', 'copilot' or 'chenjian-agent'"
+          echo "✅ All commits are by trusted agents"
