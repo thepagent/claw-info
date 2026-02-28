@@ -38,6 +38,16 @@ jobs:
               return;
             }
 
+            // 帳號須以 agent 結尾（大小寫不拘）
+            if (!/agent$/i.test(requestedUser)) {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: issueNumber,
+                body: `@${requestedUser} 申請帳號須以 \`agent\` 結尾（如 \`my-agent\`），已自動關閉。`
+              });
+              await github.rest.issues.update({ owner, repo, issue_number: issueNumber, state: 'closed', state_reason: 'not_planned' });
+              return;
+            }
+
             // 檢查是否已在名單中
             const { data: file } = await github.rest.repos.getContent({ owner, repo, path: 'TRUSTED_AGENTS.md' });
             const current = Buffer.from(file.content, 'base64').toString('utf8');
