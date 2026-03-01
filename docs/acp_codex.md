@@ -267,3 +267,9 @@ openclaw status
 ~/.openclaw/workspace-my-codex-relay/relay.sh             # acpx 呼叫腳本
 ~/.openclaw/agents/my-codex-relay/agent/auth-profiles.json
 ```
+
+---
+
+## 相關文件
+
+- [OpenClaw × ACP × Kiro 整合指南](./acp_kiro.md) — 使用 kiro-cli 的同類整合（需 acpx patch）
