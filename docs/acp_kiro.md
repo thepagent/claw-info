@@ -270,3 +270,9 @@ kiro-cli --version
 ~/.openclaw/workspace-my-relay/relay.sh            # acpx 呼叫腳本
 ~/.openclaw/agents/my-relay/agent/auth-profiles.json
 ```
+
+---
+
+## 相關文件
+
+- [OpenClaw × ACP × Codex 整合指南](./acp_codex.md) — 使用 OpenAI Codex CLI 的同類整合（無需 acpx patch）
