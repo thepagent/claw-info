@@ -1,6 +1,6 @@
 # OpenClaw × ACP × Kiro 整合指南
 
-讓你的 OpenClaw agent 透過 Telegram 轉接 Kiro，實現對話持久化。
+讓你的 OpenClaw 透過 ACP 轉接 Kiro，實現對話持久化。
 
 ---
 
