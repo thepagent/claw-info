@@ -32,42 +32,13 @@
 
 ## 步驟零：為 acpx 套用 kiro patch
 
-原版 acpx 不支援 kiro-cli，需要三處修改後重新 build 並部署。
+原版 acpx 不支援 kiro-cli，需要兩處修改後重新 build 並部署。
 
 ### 原因
 
-kiro-cli 與 acpx 都實作 ACP（Agent Client Protocol）`protocolVersion: 1`，協議版本相同。但 kiro-cli 在串流回應時，部分內容是**非標準的裸 JSON 格式**：
+acpx 的 agent registry 沒有內建 kiro，無法用 `acpx kiro` 指令。此外 openclaw health check 需要 acpx 有版本號。
 
-```json
-{"content":"回應文字","type":"text"}
-```
-
-而 ACP 標準要求的是完整的 JSON-RPC 2.0 notification：
-
-```json
-{
-  "jsonrpc": "2.0",
-  "method": "session/update",
-  "params": {
-    "sessionId": "...",
-    "update": {
-      "sessionUpdate": "agent_message_chunk",
-      "content": {"type": "text", "text": "回應文字"}
-    }
-  }
-}
-```
-
-acpx 只能解析標準格式，收到裸 JSON 時直接忽略，導致 kiro 的回應全部消失。
-
-此外，acpx 的 agent registry 沒有內建 kiro，無法用 `acpx kiro` 指令。
-
-patch 的作用：
-1. 在 registry 加入 `kiro: "kiro-cli acp"`
-2. 在 client 加入 `normalizeAgentOutput()` TransformStream，即時將裸 JSON 轉換成標準 ACP envelope
-
-> **Bug report**：[kirodotdev/Kiro#6131](https://github.com/kirodotdev/Kiro/issues/6131)
-> 若 kiro-cli 官方修正此問題，步驟零可省略。
+> **注意**：kiro-cli 1.26.2 的 ACP 輸出格式完全符合標準（`session/update` JSON-RPC 2.0），無需任何格式轉換。
 
 ### 修改內容
 
@@ -81,13 +52,6 @@ kiro: "kiro-cli acp",
 .version("0.1.13", "--version", "Print version")
 ```
 
-**3. `src/client.ts` — 加入 `normalizeAgentOutput()` TransformStream**
-
-將 kiro 的裸輸出包裝成標準 ACP `session/update` envelope：
-```typescript
-// 偵測 {"content":"...","type":"text"} 格式
-// 包裝成 {"jsonrpc":"2.0","method":"session/update","params":{...}}
-```
 完整實作見：https://github.com/thepagent/acpx/tree/feat/kiro-agent
 
 ### Build 與部署
@@ -271,7 +235,7 @@ openclaw status
 
 ## Future Path
 
-openclaw PR [#28817](https://github.com/openclaw/openclaw/pull/28817) / [#29547](https://github.com/openclaw/openclaw/pull/29547) 將 ACP client 內建進 openclaw。若 kiro-cli 官方修正裸 JSON 問題，合併後可直接用 `sessions_spawn(runtime:"acp-standard", agentId:"kiro")` 取代 relay.sh，不再需要 acpx patch。
+openclaw PR [#28817](https://github.com/openclaw/openclaw/pull/28817) / [#29547](https://github.com/openclaw/openclaw/pull/29547) 將 ACP client 內建進 openclaw。合併後可直接用 `sessions_spawn(runtime:"acp-standard", agentId:"kiro")` 取代 relay.sh，不再需要 acpx patch。
 
 ---
 
