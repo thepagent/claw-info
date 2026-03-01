@@ -34,6 +34,8 @@
 
 原版 acpx 不支援 kiro-cli，需要兩處修改後重新 build 並部署。
 
+> **Upstream fix pending**：[openclaw/acpx#40](https://github.com/openclaw/acpx/pull/40) 正在 review 中，合併後官方 acpx 即內建 kiro，步驟零可省略，直接用 `npm install -g acpx` 即可。
+
 ### 原因
 
 acpx 的 agent registry 沒有內建 kiro，無法用 `acpx kiro` 指令。此外 openclaw health check 需要 acpx 有版本號。
