@@ -36,7 +36,7 @@
 
 ### 原因
 
-kiro-cli 與 acpx 都實作 ACP（Agent Client Protocol）`protocolVersion: 1`，協議版本相同。但 kiro-cli 在串流回應時，輸出的是**非標準的裸 JSON 格式**：
+kiro-cli 與 acpx 都實作 ACP（Agent Client Protocol）`protocolVersion: 1`，協議版本相同。但 kiro-cli 在串流回應時，部分內容是**非標準的裸 JSON 格式**：
 
 ```json
 {"content":"回應文字","type":"text"}
