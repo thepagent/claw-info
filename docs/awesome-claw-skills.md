@@ -12,11 +12,26 @@
 
 ## How to Use
 
+There are two ways to use a skill:
+
+**Option 1: Let OpenClaw agent read and apply**
+
+Point your OpenClaw agent to the skill's SKILL.md URL, and it will read and learn the skill directly:
+
+```
+Read and follow the skill at:
+https://raw.githubusercontent.com/jiayun/jiayun-claw-skills/main/skills/androidtv-netflix/SKILL.md
+```
+
+**Option 2: Copy to your workspace**
+
 Clone or copy the skill into your workspace's `skills/` directory:
 
 ```bash
-# Example: Using androidtv-netflix skill
+# Clone the repository
 git clone https://github.com/jiayun/jiayun-claw-skills.git
+
+# Copy the skill folder
 cp -r jiayun-claw-skills/skills/androidtv-netflix /path/to/your/workspace/skills/
 ```
 
