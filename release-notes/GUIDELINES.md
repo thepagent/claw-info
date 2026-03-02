@@ -71,6 +71,7 @@ For **⭐⭐⭐ items**, an ASCII solid-line flowchart is **required** immediate
 ```
 
 **Flowchart rules for ⭐⭐⭐ items:**
+- **Source-grounded**: The agent **must navigate the upstream source code** (via `gh search code` + `gh api`) to understand the actual implementation before drawing the chart. Do not infer from PR title or description alone.
 - Use solid-line box-drawing characters only: `┌ ┐ └ ┘ │ ─` for boxes, `────►` for horizontal arrows, `│` + `▼` / `▲` for vertical arrows.
 - Prefer **flow charts** (showing process/sequence) over static block diagrams.
 - Keep it **5–20 lines**; focus on the key flow, not exhaustive detail.
