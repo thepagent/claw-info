@@ -273,3 +273,4 @@ openclaw status
 ## 相關文件
 
 - [OpenClaw × ACP × Kiro 整合指南](./acp_kiro.md) — 使用 kiro-cli 的同類整合（需 acpx patch）
+- [OpenClaw × ACP × Gemini 整合指南](./acp_gemini.md) — 使用 Google Gemini CLI（無需 patch）

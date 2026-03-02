@@ -276,3 +276,4 @@ kiro-cli --version
 ## 相關文件
 
 - [OpenClaw × ACP × Codex 整合指南](./acp_codex.md) — 使用 OpenAI Codex CLI 的同類整合（無需 acpx patch）
+- [OpenClaw × ACP × Gemini 整合指南](./acp_gemini.md) — 使用 Google Gemini CLI（無需 patch）
