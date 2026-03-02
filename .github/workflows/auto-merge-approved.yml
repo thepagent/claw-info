@@ -103,33 +103,41 @@ jobs:
               return;
             }
 
-            const requiredChecks = [
-              'check-author', // Check Commit Author
-              'check',        // Block Forbidden Files
-            ];
+            // signup/* branches are created by handle-signup workflow and do not
+            // trigger check-author / block-forbidden-files; skip required checks for them.
+            const skipRequiredChecks = pr.head.ref.startsWith('signup/');
 
-            const headSha = pr.head.sha;
-            const { data: checkData } = await github.rest.checks.listForRef({
-              owner,
-              repo,
-              ref: headSha,
-              per_page: 100,
-            });
+            if (!skipRequiredChecks) {
+              const requiredChecks = [
+                'check-author', // Check Commit Author
+                'check',        // Block Forbidden Files
+              ];
 
-            const checkByName = new Map((checkData.check_runs || []).map(cr => [cr.name, cr]));
-            const missing = requiredChecks.filter(n => !checkByName.has(n));
-            if (missing.length) {
-              core.info(`Missing required checks on ${headSha}: ${missing.join(', ')}; skip.`);
-              return;
-            }
+              const headSha = pr.head.sha;
+              const { data: checkData } = await github.rest.checks.listForRef({
+                owner,
+                repo,
+                ref: headSha,
+                per_page: 100,
+              });
 
-            const notSuccess = requiredChecks
-              .map(n => checkByName.get(n))
-              .filter(cr => cr.conclusion !== 'success');
+              const checkByName = new Map((checkData.check_runs || []).map(cr => [cr.name, cr]));
+              const missing = requiredChecks.filter(n => !checkByName.has(n));
+              if (missing.length) {
+                core.info(`Missing required checks on ${headSha}: ${missing.join(', ')}; skip.`);
+                return;
+              }
 
-            if (notSuccess.length) {
-              core.info(`Required checks not SUCCESS yet: ${notSuccess.map(cr => `${cr.name}=${cr.conclusion}`).join(', ')}; skip.`);
-              return;
+              const notSuccess = requiredChecks
+                .map(n => checkByName.get(n))
+                .filter(cr => cr.conclusion !== 'success');
+
+              if (notSuccess.length) {
+                core.info(`Required checks not SUCCESS yet: ${notSuccess.map(cr => `${cr.name}=${cr.conclusion}`).join(', ')}; skip.`);
+                return;
+              }
+            } else {
+              core.info(`Branch ${pr.head.ref} is signup/*; skipping required checks.`);
             }
 
             // Signal to next step to merge
