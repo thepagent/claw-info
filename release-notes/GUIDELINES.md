@@ -50,6 +50,33 @@ Each item should follow this format:
 - **影響**: Impact and benefits
 ```
 
+For **⭐⭐⭐ and ⭐⭐ items**, an ASCII solid-line flowchart is **required** immediately after the bullet points, enclosed in a ` ```text ` block. The flowchart must explain how the feature/fix works (not just what it is).
+
+```markdown
+### ⭐⭐⭐ Item Title ([#PR_NUMBER](https://github.com/openclaw/openclaw/pull/PR_NUMBER))
+- **用途**: ...
+- **解決問題**: ...
+- **影響**: ...
+
+```text
+┌─────────────┐     ┌─────────────┐
+│   Step A    │────►│   Step B    │
+└─────────────┘     └─────────────┘
+                          │
+                          ▼
+                    ┌─────────────┐
+                    │   Result    │
+                    └─────────────┘
+```
+```
+
+**Flowchart rules for ⭐⭐⭐ / ⭐⭐ items:**
+- Use solid-line box-drawing characters only: `┌ ┐ └ ┘ │ ─` for boxes, `────►` for horizontal arrows, `│` + `▼` / `▲` for vertical arrows.
+- Prefer **flow charts** (showing process/sequence) over static block diagrams.
+- Keep it **5–20 lines**; focus on the key flow, not exhaustive detail.
+- The flowchart must **complement** 用途/解決問題/影響 — not replace them.
+- ⭐ (one-star) items do **not** require a flowchart (optional).
+
 Always include the PR/Issue number at the end.
 
 #### 引用格式（Link rule, recommended）
@@ -130,6 +157,7 @@ Use star ratings to indicate importance:
   - 若上游 release/changelog 該類別本就不足 10 項，則以「完整涵蓋可取得的項目」為準，不強制湊數。
 - **Complete details**: Ensure every item has用途, 解決問題, 影響
 - **PR/Issue references**: Always include PR/Issue numbers（若無則依 Link rule 以 release/advisory 連結替代）
+- **Flowcharts**: Required for all ⭐⭐⭐ and ⭐⭐ items (see Item Format section)
 
 ### Categories
 
@@ -142,9 +170,9 @@ Use star ratings to indicate importance:
 1. **Review GitHub releases first** - Always check the official GitHub releases for the target version
 2. **Sort by importance** - Order items by star rating (most important first)
 3. **Include GitHub link** - Add direct link to the release in the header
-4. **Optional: flow charts** - For particularly impactful changes, you may include a short ` ```text ` flow chart under the item to illustrate architecture/flow.
+4. **Flowcharts for ⭐⭐⭐ and ⭐⭐ items** - Required (not optional) for all 3-star and 2-star items.
    - 偏好流程圖（flow chart）而非靜態方塊圖（box diagram）。使用 `─►`、`▼`、`▲` 箭頭與 `┌┐└┘│─` 邊框繪製。
-   - Keep it brief (roughly 5–20 lines) and only for a few top items (2–3 per release).
+   - Keep it brief (5–20 lines) and focused on the key flow.
    - Flow charts should explain, not replace, 用途/解決問題/影響。
 5. **Use markdown tables** - For summary and complex information
 6. **Proofread** - Ensure all PR links are correct and descriptions are accurate
@@ -156,6 +184,7 @@ Use star ratings to indicate importance:
 - [ ] Items sorted by star rating (descending)
 - [ ] All items include PR/Issue numbers (or valid release/advisory links if no PR/Issue)
 - [ ] All items have用途, 解決問題, 影響
+- [ ] **All ⭐⭐⭐ and ⭐⭐ items include an ASCII solid-line flowchart**
 - [ ] Overview items appear in the corresponding detailed sections (same PR/Issue links)
 - [ ] Summary table completed
 - [ ] GitHub release link included
@@ -174,10 +203,44 @@ Use star ratings to indicate importance:
 
 ## 功能更新 (Features) - by Star Rating
 
-### ⭐⭐⭐ Item 1
-...
+### ⭐⭐⭐ Item 1 ([#123](https://github.com/openclaw/openclaw/pull/123))
+- **用途**: ...
+- **解決問題**: ...
+- **影響**: ...
 
-### ⭐⭐ Item 2
+```text
+┌──────────────┐     ┌──────────────┐
+│   Before     │────►│    After     │
+└──────────────┘     └──────────────┘
+                           │
+                           ▼
+                     ┌──────────────┐
+                     │   Result     │
+                     └──────────────┘
+```
+
+### ⭐⭐ Item 2 ([#124](https://github.com/openclaw/openclaw/pull/124))
+- **用途**: ...
+- **解決問題**: ...
+- **影響**: ...
+
+```text
+┌──────────────┐
+│   Input      │
+└──────────────┘
+       │
+       ▼
+┌──────────────┐
+│   Process    │
+└──────────────┘
+       │
+       ▼
+┌──────────────┐
+│   Output     │
+└──────────────┘
+```
+
+### ⭐ Item 3
 ...
 
 ## 安全性提升 (Security) - by Star Rating
@@ -202,4 +265,4 @@ Use star ratings to indicate importance:
 
 ---
 
-*Last Updated: 2026-02-15*
+*Last Updated: 2026-03-02*
