@@ -52,6 +52,7 @@
   - `messaging-routing.md`
   - `skills-system.md`
   - `memory-strategy.md`
+  - `agent-scope-collaboration.md`
 
 ## 貢獻方式（簡要）
 
