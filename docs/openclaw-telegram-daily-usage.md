@@ -2,12 +2,78 @@
 
 > 以台灣使用者角度，分享 OpenClaw 整合 Telegram 的實戰經驗
 
+## 整合架構
+
+```mermaid
+%%{init: {'theme': 'dark'}}%%
+flowchart LR
+    subgraph You["👤 你 (Dar)"]
+        Phone[📱 Telegram App]
+    end
+    
+    subgraph Cloud["☁️ Telegram Cloud"]
+        API[Telegram Bot API]
+    end
+    
+    subgraph Local["🏠 本機 (Mac)"]
+        GW[OpenClaw Gateway]
+        Agent[🤖 AI Agent]
+        Memory[📝 Memory]
+        Cron[⏰ Cron Jobs]
+        Heartbeat[💓 Heartbeat]
+    end
+    
+    Phone <-->|訊息| API
+    API <-->|Webhook/Polling| GW
+    GW <--> Agent
+    Agent <--> Memory
+    Agent --> Cron
+    Agent --> Heartbeat
+    
+    style You fill:#2d3748,stroke:#48bb78
+    style Cloud fill:#2d3748,stroke:#4299e1
+    style Local fill:#2d3748,stroke:#9f7aea
+```
+
 ## 為什麼選 Telegram？
 
-- 即時通訊，隨時隨地收訊
-- 支援語音訊息（TTS 整合）
-- 群組功能完善
-- Bot API 成熟
+| 優勢 | 說明 |
+|------|------|
+| **即時通訊** | 隨時隨地收訊 |
+| **語音支援** | 可整合 TTS（BreezyVoice） |
+| **群組功能** | 完善的群組管理 |
+| **Bot API** | 成熟穩定的 API |
+| **跨平台** | iOS、Android、Desktop |
+| **免費** | 無需付費 |
+
+### 訊息流程
+
+```mermaid
+%%{init: {'theme': 'dark'}}%%
+sequenceDiagram
+    participant H as 👤 Human
+    participant T as 📱 Telegram
+    participant G as 🔄 Gateway
+    participant A as 🤖 Agent
+    participant M as 📝 Memory
+    
+    Note over H,M: 場景 1：Human 發送訊息
+    H->>T: 喝水了
+    T->>G: 收到訊息
+    G->>A: 處理
+    A->>M: 記錄 08:15 ✅
+    A->>T: 回覆「記好了！」
+    T->>H: 顯示回覆
+    
+    Note over H,M: 場景 2：Cron 主動提醒
+    A->>A: 08:00 Cron 觸發
+    A->>T: 💧 喝水時間到！
+    T->>H: 推送通知
+    H->>T: 喝了
+    T->>G: 收到回應
+    G->>A: 處理
+    A->>M: 記錄 08:05 ✅
+```
 
 ## 基本設定
 

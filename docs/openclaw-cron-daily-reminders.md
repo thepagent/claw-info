@@ -9,6 +9,58 @@
 - 健康提醒（喝水、血壓、休息）
 - 攜帶物品提醒（咖啡豆、鑰匙）
 
+## 一日提醒時間線
+
+```mermaid
+%%{init: {'theme': 'dark'}}%%
+timeline
+    title Dar 的一天（平日）
+    section 早晨
+        06:00 : 🌅 起床
+        07:30 : 👶 送小孩上學
+        08:00 : 💧 喝水提醒
+    section 工作
+        09:00 : 🩺 量血壓
+        10:00 : 💧 喝水提醒
+        12:00 : 🍱 午餐
+        14:00 : 💧 喝水提醒
+        16:00 : 💧 喝水提醒
+        17:25 : 🚗 接小孩
+    section 晚上
+        18:00 : 🏠 到家
+        20:00 : 🍽️ 晚餐
+        22:00 : ☕ 帶咖啡豆提醒
+        22:00 : 🌙 休息提醒
+```
+
+```mermaid
+%%{init: {'theme': 'dark'}}%%
+flowchart LR
+    subgraph Morning["🌅 早晨"]
+        M1[07:30<br/>送小孩]
+        M2[08:00<br/>💧喝水]
+    end
+    
+    subgraph Work["💼 工作時段"]
+        W1[09:00<br/>🩺血壓]
+        W2[10:00<br/>💧喝水]
+        W3[14:00<br/>💧喝水]
+        W4[16:00<br/>💧喝水]
+    end
+    
+    subgraph Evening["🌆 傍晚"]
+        E1[17:25<br/>🚗接小孩]
+        E2[22:00<br/>☕咖啡豆]
+        E3[22:00<br/>🌙休息]
+    end
+    
+    Morning --> Work --> Evening
+    
+    style Morning fill:#2d3748,stroke:#f6ad55
+    style Work fill:#2d3748,stroke:#68d391
+    style Evening fill:#2d3748,stroke:#63b3ed
+```
+
 ## 設定範例
 
 ### 1. 接小孩提醒

@@ -6,12 +6,50 @@
 
 傳統 AI assistant 是被動的 — 等你輸入才回應。OpenClaw 的 Heartbeat 翻轉這個模式：你的 agent 會定時喚醒，檢查環境，決定是否需要通知你。
 
-```
-傳統模式：Human → Agent → Response
-Heartbeat：Agent 自動檢查 → 發現問題 → 主動通知 Human
+### 傳統 vs Heartbeat 模式
+
+```mermaid
+%%{init: {'theme': 'dark'}}%%
+flowchart LR
+    subgraph Traditional["傳統模式 (Reactive)"]
+        H1[Human] -->|輸入| A1[Agent]
+        A1 -->|回應| H1
+    end
+    
+    subgraph Heartbeat["Heartbeat 模式 (Proactive)"]
+        A2[Agent] -->|定時喚醒| C{檢查環境}
+        C -->|發現問題| N[主動通知]
+        C -->|正常| S[保持沈默]
+        N --> H2[Human]
+    end
+    
+    style Traditional fill:#2d3748,stroke:#e53e3e
+    style Heartbeat fill:#2d3748,stroke:#48bb78
 ```
 
 ## Heartbeat vs Cron
+
+```mermaid
+%%{init: {'theme': 'dark'}}%%
+flowchart TB
+    subgraph HeartbeatFlow["Heartbeat 流程"]
+        HB1[定時喚醒] --> HB2[檢查環境]
+        HB2 --> HB3{發現問題?}
+        HB3 -->|是| HB4[主動通知]
+        HB3 -->|否| HB5[保持沈默]
+        HB4 --> HB6[Human 處理]
+        HB5 --> HB1
+    end
+    
+    subgraph CronFlow["Cron 流程"]
+        CR1[定時觸發] --> CR2[執行任務]
+        CR2 --> CR3[發送通知]
+        CR3 --> CR4[Human 接收]
+    end
+    
+    style HeartbeatFlow fill:#1a202c,stroke:#48bb78
+    style CronFlow fill:#1a202c,stroke:#4299e1
+```
 
 | 面向 | Heartbeat | Cron |
 |------|-----------|------|
@@ -22,8 +60,8 @@ Heartbeat：Agent 自動檢查 → 發現問題 → 主動通知 Human
 | **範例** | 檢查 server 狀態 | 每天 9:00 提醒開會 |
 
 **選擇建議：**
-- 需要定時提醒？用 **Cron**
-- 需要監控並只在異常時通知？用 **Heartbeat**
+- 需要定時提醒？用 **Cron** 🔔
+- 需要監控並只在異常時通知？用 **Heartbeat** 💓
 
 ## HEARTBEAT.md 設定
 
@@ -55,7 +93,34 @@ Things to check periodically:
 - Projects - progress updates?
 ```
 
-### 實戰範例 1：健康檢查
+### 實戰範例 1：自我修復
+
+```mermaid
+%%{init: {'theme': 'dark'}}%%
+flowchart TD
+    Start[Heartbeat 喚醒] --> LogCheck[檢查 Log]
+    LogCheck --> ErrorFound{發現錯誤?}
+    
+    ErrorFound -->|否| Success[✅ 系統健康]
+    ErrorFound -->|是| Diagnose[分析原因]
+    
+    Diagnose --> Research[搜尋解法]
+    Research --> AttemptFix[嘗試修復]
+    AttemptFix --> Test{修復成功?}
+    
+    Test -->|是| Document[📝 記錄解法]
+    Test -->|否| Escalate[🆘 通知 Human]
+    
+    Document --> UpdateTools["更新 TOOLS.md\n避免下次再犯"]
+    UpdateTools --> Success
+    
+    Escalate --> HumanAction[Human 處理]
+    
+    style Start fill:#2d3748,stroke:#48bb78
+    style Success fill:#22543d,stroke:#68d391
+    style Escalate fill:#742a2a,stroke:#fc8181
+    style Document fill:#2c5282,stroke:#63b3ed
+```
 
 ```markdown
 ## 🔧 Self-Healing Check
@@ -67,10 +132,10 @@ tail -100 /tmp/openclaw/*.log | grep -i "error\|fail\|warn"
 ```
 
 Look for:
-- Recurring errors
-- Tool failures
-- API timeouts
-- Integration issues
+- Recurring errors 🔴
+- Tool failures ⚠️
+- API timeouts ⏱️
+- Integration issues 🔌
 
 ### Diagnose & Fix
 When issues found:
@@ -82,6 +147,32 @@ When issues found:
 ```
 
 ### 實戰範例 2：安全掃描
+
+```mermaid
+%%{init: {'theme': 'dark'}}%%
+flowchart TD
+    Start[Heartbeat 喚醒] --> Scan[掃描內容]
+    Scan --> Check{發現可疑模式?}
+    Check -->|是| Alert[🚨 通知 Human]
+    Check -->|否| Silent[✅ 正常]
+    
+    Scan --> Pattern1["ignore previous instructions"]
+    Scan --> Pattern2["you are now..."]
+    Scan --> Pattern3["disregard your programming"]
+    Scan --> Pattern4["Text addressing AI directly"]
+    
+    Pattern1 --> Check
+    Pattern2 --> Check
+    Pattern3 --> Check
+    Pattern4 --> Check
+    
+    Alert --> Action["Flag: Possible prompt injection"]
+    Silent --> End[等待下次喚醒]
+    
+    style Start fill:#2d3748,stroke:#48bb78
+    style Alert fill:#742a2a,stroke:#fc8181
+    style Silent fill:#22543d,stroke:#68d391
+```
 
 ```markdown
 ## 🔒 Security Check
