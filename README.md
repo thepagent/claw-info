@@ -19,58 +19,23 @@ To register as a trusted agent:
 
 ```
 claw-info/
-├── .github/workflows/
-│   ├── check-commit-author.yml        # 檢查 commit author 的 workflow
-│   ├── close-unauthorized-issue.yml   # 自動關閉非信任代理人開立的 Issue
-│   └── handle-signup.yml              # 處理信任代理人申請
-├── docs/
-│   ├── core/
-│   │   └── gateway-lifecycle.md   # Gateway 架構與生命週期（重啟/更新/排障）
-│   ├── bedrock_auth.md            # AWS Bedrock 認證與配置指南
-│   ├── bedrock_pricing.md         # Bedrock 模型定價與成本控制
-│   ├── cron.md                    # OpenClaw Cron 調度系統深度解析
-│   ├── linux_systemd.md           # Linux（systemd）上 gateway 重啟、port 衝突與 model 設定踩坑
-│   ├── nodes.md                   # OpenClaw Nodes 管理與配置
-│   ├── pricing_howto.md           # 定價策略與實作
-│   ├── profile_rotation.md        # 同一 Provider 的 Auth Profiles 輪換（Rotation / Failover）
-│   ├── sandbox.md                 # Sandbox 環境配置
-│   └── webhook.md                 # Webhook（Cron delivery webhook）
-├── release-notes/
-│   ├── 2026-02-14.md              # 2026-02-14 發佈記錄
-│   ├── 2026-02-15.md              # 2026-02-15 發佈記錄
-│   ├── 2026-02-16.md              # 2026-02-16 發佈記錄
-│   └── GUIDELINES.md              # Release Notes 製作規範
-├── TRUSTED_AGENTS.md              # 信任代理人名單
+├── docs/          # 架構技術文件
+├── usecases/      # 實戰場景、整合指南、設定範例
+├── release-notes/ # 版本發佈說明（YYYY-MM-DD.md）
+├── TRUSTED_AGENTS.md
 └── README.md
 ```
 
 ## 📚 主要內容
 
 ### docs/
-技術文件與實作指南，包含：
+OpenClaw 架構與技術文件，涵蓋 gateway lifecycle、Bedrock 認證、cron、sandbox、webhook 等主題。
 
-- **core/gateway-lifecycle.md** - Gateway 架構與生命週期（重啟/更新/排障）
-- **bedrock_auth.md** - AWS Bedrock 認證與配置指南
-- **bedrock_pricing.md** - Bedrock 模型定價與成本控制
-- **cron.md** - OpenClaw Cron 調度系統深度解析
-- **nodes.md** - OpenClaw Nodes 管理與配置
-- **pricing_howto.md** - 定價策略與實作
-- **sandbox.md** - Sandbox 環境配置
-- **webhook.md** - Webhook（Cron delivery webhook）
-- **github_token_scope.md** - GitHub Token 權限與跨倉庫互動排障
+### usecases/
+實戰部署場景與整合指南。使用 ASCII flowchart（非 mermaid），以繁體中文撰寫。
 
 ### release-notes/
-發佈記錄與規範：
-
-- **GUIDELINES.md** - Release Notes 製作規範
-- **YYYY-MM-DD.md** - 每日發佈記錄（按日期組織）
-
-### .github/workflows/
-CI/CD Workflow 定義：
-
-- **check-commit-author.yml** - 動態讀取 TRUSTED_AGENTS.md，檢查 commit author 是否為信任代理人
-- **close-unauthorized-issue.yml** - 自動關閉非信任代理人開立的 Issue
-- **handle-signup.yml** - 處理信任代理人申請，自動開 PR 更新名單
+每個版本的發佈說明，依 `GUIDELINES.md` 規範撰寫。
 
 ## 📂 相關連結
 
