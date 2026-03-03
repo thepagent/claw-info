@@ -4,35 +4,32 @@
 
 ## 整合架構
 
-```mermaid
-%%{init: {'theme': 'dark'}}%%
-flowchart LR
-    subgraph You["👤 你 (Dar)"]
-        Phone[📱 Telegram App]
-    end
-    
-    subgraph Cloud["☁️ Telegram Cloud"]
-        API[Telegram Bot API]
-    end
-    
-    subgraph Local["🏠 本機 (Mac)"]
-        GW[OpenClaw Gateway]
-        Agent[🤖 AI Agent]
-        Memory[📝 Memory]
-        Cron[⏰ Cron Jobs]
-        Heartbeat[💓 Heartbeat]
-    end
-    
-    Phone <-->|訊息| API
-    API <-->|Webhook/Polling| GW
-    GW <--> Agent
-    Agent <--> Memory
-    Agent --> Cron
-    Agent --> Heartbeat
-    
-    style You fill:#2d3748,stroke:#48bb78
-    style Cloud fill:#2d3748,stroke:#4299e1
-    style Local fill:#2d3748,stroke:#9f7aea
+```text
+┌─────────────────┐          ┌─────────────────┐          ┌─────────────────┐
+│  👤 你 (Dar)    │          │ ☁️ Telegram     │          │ 🏠 本機 (Mac)   │
+├─────────────────┤          │     Cloud       │          ├─────────────────┤
+│                 │          ├─────────────────┤          │                 │
+│  📱 Telegram    │◄────────►│ Telegram Bot    │◄────────►│ OpenClaw        │
+│     App         │  訊息    │     API         │ Webhook/ │   Gateway       │
+│                 │          │                 │ Polling  │                 │
+│                 │          │                 │          │  ┌───────────┐  │
+│                 │          │                 │          │  │ 🤖 Agent  │  │
+│                 │          │                 │          │  └─────┬─────┘  │
+│                 │          │                 │          │        │        │
+│                 │          │                 │          │        ▼        │
+│                 │          │                 │          │  ┌───────────┐  │
+│                 │          │                 │          │  │ 📝 Memory │  │
+│                 │          │                 │          │  └───────────┘  │
+│                 │          │                 │          │                 │
+│                 │          │                 │          │  ┌───────────┐  │
+│                 │          │                 │          │  │ ⏰ Cron   │  │
+│                 │          │                 │          │  └───────────┘  │
+│                 │          │                 │          │                 │
+│                 │          │                 │          │  ┌───────────┐  │
+│                 │          │                 │          │  │💓Heartbeat│  │
+│                 │          │                 │          │  └───────────┘  │
+│                 │          │                 │          │                 │
+└─────────────────┘          └─────────────────┘          └─────────────────┘
 ```
 
 ## 為什麼選 Telegram？
@@ -48,31 +45,51 @@ flowchart LR
 
 ### 訊息流程
 
-```mermaid
-%%{init: {'theme': 'dark'}}%%
-sequenceDiagram
-    participant H as 👤 Human
-    participant T as 📱 Telegram
-    participant G as 🔄 Gateway
-    participant A as 🤖 Agent
-    participant M as 📝 Memory
-    
-    Note over H,M: 場景 1：Human 發送訊息
-    H->>T: 喝水了
-    T->>G: 收到訊息
-    G->>A: 處理
-    A->>M: 記錄 08:15 ✅
-    A->>T: 回覆「記好了！」
-    T->>H: 顯示回覆
-    
-    Note over H,M: 場景 2：Cron 主動提醒
-    A->>A: 08:00 Cron 觸發
-    A->>T: 💧 喝水時間到！
-    T->>H: 推送通知
-    H->>T: 喝了
-    T->>G: 收到回應
-    G->>A: 處理
-    A->>M: 記錄 08:05 ✅
+```text
+場景 1：Human 發送訊息
+═════════════════════════════════════════════════════
+
+👤 Human    📱 Telegram   🔄 Gateway    🤖 Agent      📝 Memory
+   │            │            │            │              │
+   │ 喝水了     │            │            │              │
+   ├───────────►│            │            │              │
+   │            │ 收到訊息   │            │              │
+   │            ├───────────►│            │              │
+   │            │            │ 處理       │              │
+   │            │            ├───────────►│              │
+   │            │            │            │ 記錄 08:15 ✅│
+   │            │            │            ├─────────────►│
+   │            │            │            │ 回覆「記好了！」│
+   │            │            │            ├──────────────┤
+   │            │            │ 回覆       │              │
+   │            │◄───────────┤            │              │
+   │ 顯示回覆   │            │            │              │
+   │◄───────────┤            │            │              │
+
+
+場景 2：Cron 主動提醒
+═════════════════════════════════════════════════════
+
+👤 Human    📱 Telegram   🔄 Gateway    🤖 Agent      📝 Memory
+   │            │            │            │              │
+   │            │            │            │ 08:00 Cron   │
+   │            │            │            │ 觸發         │
+   │            │            │            ├──────┐       │
+   │            │            │            │      │       │
+   │            │ 💧 喝水時間到！          │◄─────┘       │
+   │            │◄───────────┼────────────┤              │
+   │ 推送通知   │            │            │              │
+   │◄───────────┤            │            │              │
+   │            │            │            │              │
+   │ 喝了       │            │            │              │
+   ├───────────►│            │            │              │
+   │            │ 收到回應   │            │              │
+   │            ├───────────►│            │              │
+   │            │            │ 處理       │              │
+   │            │            ├───────────►│              │
+   │            │            │            │ 記錄 08:05 ✅│
+   │            │            │            ├─────────────►│
+   │            │            │            │              │
 ```
 
 ## 基本設定

@@ -4,51 +4,62 @@
 
 ## 安全架構總覽
 
-```mermaid
-%%{init: {'theme': 'dark'}}%%
-flowchart TB
-    subgraph Human["👤 Human Layer"]
-        H[Human Owner]
-    end
-    
-    subgraph Agent["🤖 Agent Layer"]
-        A[OpenClaw Agent]
-        M[HEARTBEAT.md]
-        S[SOUL.md]
-    end
-    
-    subgraph Security["🔒 Security Layer"]
-        GW[Gateway]
-        Vault[Encrypted Vault]
-        Allowlist[Access Control]
-    end
-    
-    subgraph Tools["🛠️ Tool Layer"]
-        Exec[Exec Tool]
-        Browser[Browser Tool]
-        Message[Message Tool]
-    end
-    
-    subgraph External["🌐 External Layer"]
-        API[API Keys]
-        Telegram[Telegram]
-        GitHub[GitHub]
-    end
-    
-    H <--> A
-    A --> M
-    A --> S
-    A --> GW
-    GW --> Vault
-    GW --> Allowlist
-    Allowlist --> Tools
-    Tools --> External
-    
-    style Human fill:#2d3748,stroke:#48bb78
-    style Agent fill:#2d3748,stroke:#4299e1
-    style Security fill:#2d3748,stroke:#ecc94b
-    style Tools fill:#2d3748,stroke:#9f7aea
-    style External fill:#2d3748,stroke:#ed64a6
+```text
+┌──────────────────────┐
+│   👤 Human Layer     │
+├──────────────────────┤
+│                      │
+│    Human Owner       │
+│                      │
+└──────────┬───────────┘
+           │
+           │
+           ▼
+┌──────────────────────┐
+│   🤖 Agent Layer     │
+├──────────────────────┤
+│                      │
+│  OpenClaw Agent      │
+│  ├─ HEARTBEAT.md     │
+│  └─ SOUL.md          │
+│                      │
+└──────────┬───────────┘
+           │
+           │
+           ▼
+┌──────────────────────┐
+│  🔒 Security Layer   │
+├──────────────────────┤
+│                      │
+│  Gateway             │
+│  ├─ Encrypted Vault  │
+│  └─ Access Control   │
+│                      │
+└──────────┬───────────┘
+           │
+           │
+           ▼
+┌──────────────────────┐
+│   🛠️ Tool Layer      │
+├──────────────────────┤
+│                      │
+│  ├─ Exec Tool        │
+│  ├─ Browser Tool     │
+│  └─ Message Tool     │
+│                      │
+└──────────┬───────────┘
+           │
+           │
+           ▼
+┌──────────────────────┐
+│  🌐 External Layer   │
+├──────────────────────┤
+│                      │
+│  ├─ API Keys         │
+│  ├─ Telegram         │
+│  └─ GitHub           │
+│                      │
+└──────────────────────┘
 ```
 
 ## 前言
@@ -95,28 +106,23 @@ workspace:
 
 ### API Key 管理流程
 
-```mermaid
-%%{init: {'theme': 'dark'}}%%
-flowchart LR
-    subgraph Bad["❌ 錯誤做法"]
-        B1[明文寫在 config.yaml]
-        B2[Commit 到 Git]
-        B3[分享給他人]
-    end
-    
-    subgraph Good["✅ 正確做法"]
-        G1[環境變數]
-        G2[Encrypted Vault]
-        G3[Pass + GPG]
-    end
-    
-    Bad -->|風險| Risk[🚨 Credentials 洩漏]
-    Good -->|安全| Safe[✅ 安全存儲]
-    
-    style Bad fill:#742a2a,stroke:#fc8181
-    style Good fill:#22543d,stroke:#68d391
-    style Risk fill:#742a2a,stroke:#f56565
-    style Safe fill:#22543d,stroke:#48bb78
+```text
+┌─────────────────────────┐             ┌─────────────────────────┐
+│    ❌ 錯誤做法          │             │    ✅ 正確做法          │
+├─────────────────────────┤             ├─────────────────────────┤
+│                         │             │                         │
+│ • 明文寫在 config.yaml  │             │ • 環境變數              │
+│ • Commit 到 Git         │             │ • Encrypted Vault       │
+│ • 分享給他人            │             │ • Pass + GPG            │
+│                         │             │                         │
+└───────────┬─────────────┘             └───────────┬─────────────┘
+            │                                       │
+            │ 風險                                  │ 安全
+            ▼                                       ▼
+    ┌───────────────┐                     ┌───────────────┐
+    │ 🚨 Credentials│                     │ ✅ 安全存儲   │
+    │    洩漏       │                     │               │
+    └───────────────┘                     └───────────────┘
 ```
 
 ### ❌ 錯誤做法
