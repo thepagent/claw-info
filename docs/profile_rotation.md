@@ -183,6 +183,31 @@ openclaw models auth add
 
 新增完成後，建議用 `openclaw models status` 檢查 profiles 是否就位。
 
+### ⚡️ 進階技巧：手動新增 OAuth Profile（繞過 `default` 覆蓋問題）
+
+若你在執行 `openclaw models auth login --provider openai-codex` 時遇到 `Error: No provider plugins found`，且使用 `openclaw onboard --auth-choice openai-codex` 會直接覆蓋原本的 `openai-codex:default` token，可參考以下手動操作流程：
+
+1. **備份與重新命名舊 Profile**：
+   開啟 `~/.openclaw/agents/main/agent/auth-profiles.json`，將 `openai-codex:default` 的內容複製一份貼在後面，並將 key 改成你自訂的名字（例如 `openai-codex:JARVIS`）。
+   
+   ```json
+   "openai-codex:default": { ... },
+   "openai-codex:JARVIS": {
+     "type": "oauth",
+     "provider": "openai-codex",
+     "access": "XXXXXXXXX",
+     "refresh": "YYYYYYYYk",
+     "expires": 1772774233911,
+     "accountId": "123456798465123165468489"
+   }
+   ```
+
+2. **重新跑授權流程**：
+   執行 `openclaw onboard --auth-choice openai-codex`。這會產生一組新的 OAuth 流程，並將取得的新 token 再次寫回 `openai-codex:default`。
+
+3. **結果**：
+   此時你就會同時擁有原本被改名的舊 Profile 以及剛產生的 `default` Profile，達成多個帳號輪替的效果。
+
 ---
 
 ## 如何強制使用特定 Profile？（避免自動輪換）
@@ -226,4 +251,3 @@ openclaw models auth add
 ## 參考
 
 - OpenClaw docs（概念）：Model failover / auth profiles rotation（上游文件）
-
