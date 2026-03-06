@@ -94,39 +94,55 @@ Profile persistence (cookies/localStorage)
 ## TL;DR（最短成功路徑）
 
 ```bash
-# 1) build 這個 PR 的版本（TypeScript daemon + Rust CLI）
+# 1) 取得 PR 版本
 git clone https://github.com/vercel-labs/agent-browser.git
 cd agent-browser
 
 git fetch origin pull/397/head:pr-397
 git checkout pr-397
 
-# 1a) Build TypeScript daemon
+# 2) Build（依你選擇的 daemon 模式）
+
+# === 選項 A：Node.js daemon（預設，建議）===
 npm install
 npm run build          # 產出 dist/（Node.js daemon）
-
-# 1b) Build Rust CLI binary
 cd cli
-cargo build --release  # 產出 cli/target/release/agent-browser
+cargo build --release --features agentcore
 cd ..
-
-# 1c) 安裝到全域
 npm i -g .
-# 用 Rust binary 覆蓋 npm 安裝的 JS wrapper：
 cp cli/target/release/agent-browser "$(dirname $(which agent-browser))/agent-browser"
 
-# 2) 下載 Chromium（建議，但可選）
-# 若你主要使用 AWS AgentCore Browser（`-p agentcore`），多數情況可先略過。
-# 只有在遇到 Playwright/Chromium 相關錯誤（例如 browser binaries not installed）時，再執行：
-agent-browser install
+# === 選項 B：Native daemon（--native，實驗性）===
+# 可跳過 npm install / npm run build，只需：
+cd cli
+cargo build --release --features agentcore
+# 直接使用 cli/target/release/agent-browser --native
 
-# 3) 連 AWS Bedrock AgentCore Browser（需要 AWS credentials）
-export AGENTCORE_REGION=us-east-1
+# 3) 連線 AWS Bedrock AgentCore Browser
+# 憑證會自動從環境變數或 AWS CLI 解析（支援 SSO、profiles、IAM roles）
 agent-browser -p agentcore open https://x.com/home
+
+# 使用 browser profile 保持登入狀態：
+AGENTCORE_PROFILE_ID=my-profile agent-browser -p agentcore open https://x.com/home
 
 # 4) 收尾
 agent-browser close
 ```
+
+### 憑證解析（Credential Resolution）
+
+憑證會自動從以下來源解析：
+1. 環境變數（`AWS_ACCESS_KEY_ID`、`AWS_SECRET_ACCESS_KEY`）
+2. AWS CLI（`aws configure export-credentials`）— 支援 SSO、profiles、IAM roles
+
+不再需要手動用 `eval $(aws configure export-credentials ...)` 匯出憑證。
+
+### 相容性（Compatibility）
+
+| Daemon 模式 | 狀態 | 備註 |
+|-------------|------|------|
+| Node.js（預設） | ✅ 完整支援 | 建議使用 |
+| Native（`--native`） | ⚠️ 實驗性 | 已知問題：每個指令都會建立新 session、`eval` 尚未實作 |
 
 ---
 
