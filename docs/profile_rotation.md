@@ -130,7 +130,7 @@ OpenClaw 為了提高快取命中與避免不必要的抖動，會對每個 sess
 - **Timeout / 連線錯誤 / 類似速率限制的超時**
   - 通常也視為「暫時性」：會進入 **cooldown**，並輪換到下一個 profile。
 - **Authentication errors**（憑證失效/過期）
-  - 可能會被視為需要重新登入/授權；在可輪換的前提下，會嘗試下一個 profile。
+  - 可能會被視為與需要重新登入/授權；在可輪換的前提下，會嘗試下一個 profile。
 - **Out of quota / credits 不足 / 計費（billing）類錯誤**
   - 通常視為「非暫時性」：會把該 profile 標記為 **disabled**（較長退避），在 disabled 期間 **round-robin 會跳過它**，改用下一個可用 profile。
 
@@ -195,10 +195,10 @@ openclaw models auth add
    "openai-codex:JARVIS": {
      "type": "oauth",
      "provider": "openai-codex",
-     "access": "XXXXXXXXX",
-     "refresh": "YYYYYYYYk",
+     "access": "<YOUR_ACCESS_TOKEN>",
+     "refresh": "<YOUR_REFRESH_TOKEN>",
      "expires": 1772774233911,
-     "accountId": "123456798465123165468489"
+     "accountId": "<YOUR_ACCOUNT_ID>"
    }
    ```
 
