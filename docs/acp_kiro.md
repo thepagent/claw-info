@@ -231,6 +231,74 @@ journalctl --user -u openclaw-gateway.service --since "5 min ago" --no-pager | t
 openclaw hooks list  # 確認 ✓ ready
 ```
 
+### ACP 模式下 MCP tools 無法使用
+
+**症狀：**
+- MCP servers 在`~/.kiro/settings/mcp.json` 中已配置
+- `kiro-cli mcp list` 顯示 servers 正常
+- 但 ACP 模式下agent 只能看到基本工具（read, write, shell 等）
+- 無法使用 web-search、fetch 等 MCP 工具
+
+**原因：**
+`~/.kiro/settings/mcp.json` 的配置只載入到 default profile（`kiro_default`），不會自動繼承到 ACP agent。
+
+**解決方案：**
+
+1. **將 MCP servers 複製到 agent 配置：**
+
+編輯 `~/.kiro/agents/<agent-name>.json`：
+
+```json
+{
+  "mcpServers": {
+    "fetch": {
+      "command": "uvx",
+      "args": ["mcp-server-fetch"],
+      "env": {},
+      "disabled": false,
+      "autoApprove": []
+    },
+    "Context7": {
+      "command": "npx-for-claude",
+      "args": ["-y", "@upstash/context7-mcp"],
+      "env": {},
+      "disabled": false,
+      "autoApprove": ["resolve-library-id", "get-library-docs"]
+    }
+  }
+}
+```
+
+2. **添加內建工具和 allowedTools：**
+
+```json
+{
+  "tools": [
+    "read", "write", "shell", "report", "introspect",
+    "knowledge", "thinking", "grep", "glob",
+    "web_search", "use_subagent", "todo_list"
+  ],
+  "allowedTools": [
+    "@fetch", "@Context7", "@web-search"
+  ]
+}
+```
+
+`@{MCP_SERVER_NAME}` 語法會白名單該 MCP server 的所有工具。
+
+3. **在 relay.sh 中添加 `-a` flag：**
+
+```bash
+kiro-cli acp --agent <name> --model <model> -a
+```
+
+`-a` (trust-all-tools) 讓 shell 指令無需互動批准，ACP 模式必備。
+
+**已知限制：**
+- Skills (`~/.kiro/skills/`) 在 ACP 模式不作用（依賴 IDE-only 的`discloseContext`）
+- Agent 的 `prompt` 欄位在 ACP 模式會被忽略（workaround：透過 relay.sh 注入或 `.kiro/steering/` 檔案）
+- `useLegacyMcpJson` 設定不影響行為，MCP servers 必須在 agent 的 `mcpServers` 欄位
+
 ---
 
 ## 檔案清單
