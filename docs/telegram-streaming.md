@@ -2,6 +2,8 @@
 
 > OpenClaw 如何實現 Telegram Bot 的動態回覆體驗
 
+> **注意**：本文程式碼片段為行為示意，非逐字引用原始碼。實際實作可能隨版本變動，請以 OpenClaw 主專案原始碼為準。
+
 ## TL;DR
 
 - Telegram Bot 透過**編輯同一則訊息**實現串流效果，而非發送多則訊息
@@ -71,11 +73,7 @@ Bot: 你好！我是 AI 助手，很高興為你服務。← 編輯訊息
 {
   "channels": {
     "telegram": {
-      "streaming": "block",
-      "blockStreaming": false,
-      "timeoutSeconds": 30,
-      "throttleMs": 1000,
-      "minInitialChars": 30
+      "streaming": "block"
     }
   }
 }
@@ -86,9 +84,11 @@ Bot: 你好！我是 AI 助手，很高興為你服務。← 編輯訊息
   - `"off"` - 關閉串流，等全部生成完才發送
   - `"partial"` - 僅串流答案
   - `"block"` - 完整串流（答案 + 推理）
-  - `"progress"` - 顯示進度條
-- `throttleMs`: 節流間隔（毫秒），預設 1000
-- `minInitialChars`: 第一次發送的最小字數，預設 30
+  - `"progress"` - 進度條模式（在 Telegram 上等同於 `"partial"`）
+
+**注意**：以下參數為內部實作細節，無法透過配置修改：
+- `throttleMs`: 節流間隔固定為 1000ms
+- `minInitialChars`: 最小字數門檻固定為 30 字
 
 ## 實作細節
 
@@ -246,6 +246,11 @@ if (typeof streamMessageId !== "number") {
 
 **實作位置**：`src/telegram/lane-delivery.ts`
 
+**觸發條件**：
+- AI 回覆包含 `<thinking>` 或 `<thought>` 等推理標籤時自動啟用
+- 配置為 `streaming: "block"` 模式
+- 支援的標籤：`<think>`, `<thinking>`, `<thought>`, `<antthinking>`
+
 **兩種軌道：**
 1. **Answer Lane** - 主要回答內容
 2. **Reasoning Lane** - AI 推理過程（類似 ChatGPT 的 "Thinking..."）
@@ -342,13 +347,12 @@ Bot: ```python
 ## 最佳實務
 
 **建議：**
-- 使用 `streaming: "block"` 獲得最佳體驗
-- 保持 `throttleMs: 1000` 避免 Rate Limit
-- 設定 `minInitialChars: 30` 改善推播通知品質
+- 使用 `streaming: "block"` 獲得最佳體驗（包含推理過程）
+- 節流間隔固定為 1000ms，避免 Rate Limit
+- 最小字數門檻固定為 30 字，改善推播通知品質
 
 **避免：**
-- 不要設定 `throttleMs` 低於 500ms（容易觸發 Rate Limit）
-- 不要在高頻場景（如群組）關閉節流
+- 不要在高頻場景（如群組）關閉串流
 
 ## Troubleshooting
 
@@ -356,7 +360,6 @@ Bot: ```python
 
 **可能原因：**
 1. `streaming` 設定為 `"off"`
-2. `blockStreaming: true`
 
 **處理方式：**
 ```bash
@@ -369,19 +372,12 @@ cat ~/.openclaw/openclaw.json | grep -A 5 "telegram"
 ### 症狀：Bot 顯示「正在輸入...」但沒有訊息出現
 
 **可能原因：**
-1. 內容未達 `minInitialChars` 門檻（預設 30 字）
+1. 內容未達最小字數門檻（固定 30 字）
 2. AI 生成速度過慢
 
 **處理方式：**
-```json
-{
-  "channels": {
-    "telegram": {
-      "minInitialChars": 10  // 降低門檻
-    }
-  }
-}
-```
+- 這是正常行為，等待內容累積到 30 字後會自動發送
+- 無法透過配置調整此門檻
 
 ### 症狀：收到錯誤 "message is not modified"
 
@@ -413,11 +409,13 @@ cat ~/.openclaw/openclaw.json | grep -A 5 "telegram"
 curl -X GET "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getMe"
 
 # 2. 重新設定 token
-openclaw config set telegram.botToken <NEW_TOKEN>
+openclaw config set telegram.botToken <YOUR_BOT_TOKEN>
 
 # 3. 重啟 gateway
-openclaw restart
+openclaw gateway restart
 ```
+
+**安全提醒**：請將 `<YOUR_BOT_TOKEN>` 替換為實際 token，避免外洩。
 
 ### 症狀：訊息超過 4096 字後被截斷
 
@@ -425,8 +423,21 @@ openclaw restart
 - Telegram 單則訊息上限為 4096 字元
 
 **處理方式：**
-- OpenClaw 會自動停止串流並分段發送
+- OpenClaw 會自動停止串流，避免 API 錯誤
+- 完整內容會在串流結束後分段發送
 - 這是預期行為
+
+**技術細節：**
+```typescript
+// src/telegram/draft-stream.ts
+const TELEGRAM_STREAM_MAX_CHARS = 4096;
+
+if (renderedText.length > maxChars) {
+  streamState.stopped = true;
+  // 停止串流，後續分段發送完整內容
+  return false;
+}
+```
 
 ## 安全注意事項
 
@@ -501,8 +512,10 @@ if (rendered === lastSentText) {
 - `./troubleshooting.md` - 通用排錯指南
 - `./nodes.md` - 裝置配對與通知
 - [Telegram Bot API 文件](https://core.telegram.org/bots/api)
-- 原始碼位置：
-  - `src/telegram/draft-stream.ts` - 核心串流邏輯
-  - `src/channels/typing.ts` - 打字指示器
-  - `src/telegram/sendchataction-401-backoff.ts` - 錯誤處理
-  - `src/telegram/lane-delivery.ts` - 多軌道輸出
+
+**OpenClaw 主專案原始碼位置：**
+- `src/telegram/draft-stream.ts` - 核心串流邏輯
+- `src/channels/typing.ts` - 打字指示器
+- `src/telegram/sendchataction-401-backoff.ts` - 錯誤處理
+- `src/telegram/lane-delivery.ts` - 多軌道輸出
+- `src/telegram/reasoning-lane-coordinator.ts` - 推理軌道協調器
