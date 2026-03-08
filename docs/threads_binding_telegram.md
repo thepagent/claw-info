@@ -2,6 +2,61 @@
 
 說明如何將 Telegram 論壇群組的特定 Topic 直接綁定到外部 ACP 代理（如 Codex、Kiro），讓訊息繞過本地 LLM，直接轉發至 ACP session。
 
+## 架構圖
+
+```
+Telegram 群組：支持Topic的群組
+┌─────────────────────────────────────────────────────┐
+│  Topic: #codex-general          Topic: #general     │
+│  ┌─────────────────────┐        ┌─────────────────┐ │
+│  │ 你好，請自我介紹     │        │ 大家好          │ │
+│  └─────────────────────┘        └─────────────────┘ │
+└──────────────┬──────────────────────────┬───────────┘
+               │                          │
+               │ requireMention: false     │ requireMention: true
+               │（符合 ACP binding 條件）  │（其他 bot 保持靜默）
+               ▼                          ▼
+┌──────────────────────────┐    ┌──────────────────────────┐
+│   @guanyu                │    │  @klaw / @kongming       │
+│   帳號：guan-yu          │    │  丟棄：未被提及           │
+└──────────────┬───────────┘    └──────────────────────────┘
+               │
+               │ bindings[type=acp]
+               │ peer.id = <groupId>:topic:<threadId>
+               │ ✗ 本地 LLM 不會被呼叫
+               ▼
+┌─────────────────────────────────────────────────────┐
+│   openclaw ACP 控制層                               │
+│                                                     │
+│   agentId:  guan-yu                                 │
+│   runtime:  acpx                                    │
+│   agent:    codex                                   │
+│   cwd:      workspace-guan-yu/                      │
+│   mode:     persistent                              │
+└──────────────────────────┬──────────────────────────┘
+                           │ acpx 啟動／重用 session
+                           ▼
+┌─────────────────────────────────────────────────────┐
+│   codex-acp 外部程序                                │
+│                                                     │
+│   讀取：workspace-guan-yu/SOUL.md                   │
+│         workspace-guan-yu/memory/                   │
+│   模型：Codex CLI 自身的模型設定                    │
+│   session：persistent（同一 topic 共用上下文）      │
+└──────────────────────────┬──────────────────────────┘
+                           │ 回覆文字
+                           ▼
+┌─────────────────────────────────────────────────────┐
+│   Telegram Bot API                                  │
+│   sendMessage                                       │
+│   chat_id:           <groupId>                      │
+│   message_thread_id: <threadId>                     │
+└──────────────────────────┬──────────────────────────┘
+                           │
+                           ▼
+              #codex-general ← guan-yu 回覆
+```
+
 ## 運作原理
 
 openclaw 的 `bindings` 設定支援 `"acp"` 類型，可攔截符合條件的入站訊息，直接路由到 ACP session，而不觸發本地代理的 LLM。
