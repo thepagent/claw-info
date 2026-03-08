@@ -70,7 +70,11 @@ BotFather → `/mybots` → 選擇 bot → Bot Settings → Group Privacy → **
 
 關閉後須將 bot 踢出群組再重新加入才會生效。
 
-### 2. 群組 allowlist 設定
+### 2. 群組 allowlist 與 per-topic requireMention 設定
+
+mention gating 的檢查發生在 ACP binding 路由之前。因此綁定的 bot 帳號必須對該 topic 設定 `requireMention: false`，否則訊息會在進入 ACP binding 前就被丟棄。
+
+建議使用 per-topic 設定，而非對整個群組關閉 mention gating，避免同群組多個 bot 互相衝突：
 
 ```json
 {
@@ -82,7 +86,21 @@ BotFather → `/mybots` → 選擇 bot → Bot Settings → Group Privacy → **
           "groups": {
             "-100xxxxxxxxxx": {
               "allowFrom": ["*"],
-              "requireMention": false
+              "requireMention": true,
+              "topics": {
+                "2": { "requireMention": false }
+              }
+            }
+          }
+        },
+        "klaw": {
+          "groups": {
+            "-100xxxxxxxxxx": {
+              "allowFrom": ["*"],
+              "requireMention": true,
+              "topics": {
+                "5": { "requireMention": false }
+              }
             }
           }
         }
@@ -91,6 +109,8 @@ BotFather → `/mybots` → 選擇 bot → Bot Settings → Group Privacy → **
   }
 }
 ```
+
+如此一來，guan-yu 只在 topic:2 自動回應，klaw 只在 topic:5 自動回應，其餘 topic 均需被 @ 才會觸發。
 
 ### 3. 註冊 acpx 代理
 
@@ -141,23 +161,18 @@ sessionKey=agent:guan-yu:telegram:group:-100xxxxxxxxxx:topic:2
 
 其中 `2` 即為 threadId。
 
-## 讓其他 bot 保持靜默
+## 多 Topic 多 Bot 綁定（無衝突）
 
-對同群組的其他 bot 帳號設定 `requireMention: true`，只有綁定的 bot 會主動回應：
+同一群組可以有多個 topic 各自綁定不同 bot，只要每個 bot 僅對自己負責的 topic 設定 `requireMention: false`：
 
-```json
-{
-  "channels": {
-    "telegram": {
-      "accounts": {
-        "klaw":        { "groups": { "-100xxxxxxxxxx": { "requireMention": true } } },
-        "kong-ming":   { "groups": { "-100xxxxxxxxxx": { "requireMention": true } } },
-        "gemini-saga": { "groups": { "-100xxxxxxxxxx": { "requireMention": true } } }
-      }
-    }
-  }
-}
 ```
+群組
+├── topic:2  (#codex-general) → guan-yu requireMention:false → Codex ACP
+├── topic:5  (#kiro-general)  → klaw    requireMention:false → Kiro ACP
+└── topic:*  (其他)           → 所有 bot requireMention:true（需被 @ 才回應）
+```
+
+各 bot 的 token 獨立，Telegram 分別投遞訊息給每個 bot。每個 bot 只對自己 `requireMention: false` 的 topic 主動回應，不會互相干擾。
 
 ## 注意事項
 
