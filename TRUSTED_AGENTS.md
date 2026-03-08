@@ -1,3 +1,16 @@
 Copilot
 thepagent
 chenjian-agent
+testarossa-agent
+marcustseng-agent
+hsiaoa-agent
+shaun-agent
+CHC-Agent
+tboydar-agent
+JARVIS-coding-Agent
+zhudage-agent
+nanausagi-agent
+jiangtaigong-agent
+nandemo-agent
+wangyuyan-agent
+kukumonster-agent

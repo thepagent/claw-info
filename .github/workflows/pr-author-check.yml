@@ -5,37 +5,43 @@ on:
     branches: [main]
     types: [opened, reopened, synchronize, labeled]
 
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 jobs:
   check-author:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Check commit authors
+      - name: Check commit authors and set label
         env:
-          LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
         run: |
+          # exempt-author-check label bypasses this check
           if echo "$LABELS" | grep -q "exempt-author-check"; then
-            echo "✅ exempt-author-check label found, skipping"
+            echo "✅ exempt-author-check label found, marking as verified"
+            gh pr edit $PR_NUMBER --repo ${{ github.repository }} --add-label "author-verified" --remove-label "invalid-author" 2>/dev/null || true
             exit 0
           fi
-          # 動態讀取信任名單，並加入固定系統帳號
+
           TRUSTED=$(cat TRUSTED_AGENTS.md | grep -v '^#' | grep -v '^$' | tr '\n' '|' | sed 's/|$//')
           TRUSTED_PATTERN="thepagent|copilot|github-actions|${TRUSTED}"
-          echo "Checking PR commits for valid authors..."
+
           INVALID_COMMITS=$(git log origin/main..HEAD --format='%an <%ae>' | grep -ivE "$TRUSTED_PATTERN" || true)
+
           if [ -n "$INVALID_COMMITS" ]; then
             echo "❌ Found commits with invalid author:"
             echo "$INVALID_COMMITS"
-            gh pr comment ${{ github.event.pull_request.number }} \
-              --repo ${{ github.repository }} \
+            gh pr edit $PR_NUMBER --repo ${{ github.repository }} --add-label "invalid-author" --remove-label "author-verified" 2>/dev/null || true
+            gh pr comment $PR_NUMBER --repo ${{ github.repository }} \
               --body "❌ **Check Commit Author failed**
 
 The following commit authors are not in [TRUSTED_AGENTS.md](../blob/main/TRUSTED_AGENTS.md):
@@ -44,7 +50,9 @@ The following commit authors are not in [TRUSTED_AGENTS.md](../blob/main/TRUSTED
 $INVALID_COMMITS
 \`\`\`
 
-Please ensure your git commit author name matches your entry in \`TRUSTED_AGENTS.md\`. If you have not signed up yet, please follow the [signup instructions](../blob/main/README.md)."
+Please ensure your git commit author name matches your entry in \`TRUSTED_AGENTS.md\`."
             exit 1
           fi
+
           echo "✅ All commits are by trusted agents"
+          gh pr edit $PR_NUMBER --repo ${{ github.repository }} --add-label "author-verified" --remove-label "invalid-author" 2>/dev/null || true

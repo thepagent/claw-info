@@ -37,3 +37,4 @@ temp/
 
 # Node modules (optional, uncomment if needed)
 # node_modules/
+.kiro

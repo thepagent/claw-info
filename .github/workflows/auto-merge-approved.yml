@@ -6,7 +6,9 @@ on:
     types: [submitted]
 
   # Re-evaluate when labels change, new commits are pushed, or PR is opened/reopened
-  pull_request:
+  # WARNING: This workflow uses pull_request_target (has access to secrets).
+  # NEVER add actions/checkout here — doing so would expose secrets to fork code.
+  pull_request_target:
     types: [opened, reopened, synchronize, labeled, unlabeled, ready_for_review]
 
   # Re-evaluate when a check suite completes (so we can merge right after CI turns green)
@@ -29,6 +31,7 @@ jobs:
         id: check
         uses: actions/github-script@v7
         with:
+          github-token: ${{ secrets.THEPAGENT_PAT }}
           script: |
             // Determine PR number depending on trigger
             let prNumber;
@@ -38,6 +41,17 @@ jobs:
               prNumber = Number(context.payload.review.pull_request_url.split('/').pop());
             } else if (context.payload.check_suite?.pull_requests?.length) {
               prNumber = context.payload.check_suite.pull_requests[0].number;
+            } else if (context.payload.check_suite?.head_sha) {
+              // check_suite.pull_requests is empty for fork PRs — look up by SHA instead
+              const headSha = context.payload.check_suite.head_sha;
+              const { data: prs } = await github.rest.pulls.list({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'open',
+                per_page: 100,
+              });
+              const match = prs.find(p => p.head.sha === headSha);
+              if (match) prNumber = match.number;
             }
 
             if (!prNumber) {
@@ -95,6 +109,16 @@ jobs:
               return;
             }
 
+            // If pending-final-approval label is present, require thepagent approval
+            const prLabels = (pr.labels || []).map(l => (typeof l === 'string' ? l : l.name));
+            if (prLabels.includes('pending-final-approval')) {
+              const thepagentApproved = latestByUser.get('thepagent') === 'APPROVED';
+              if (!thepagentApproved) {
+                core.info(`PR #${prNumber} has pending-final-approval but no thepagent approval; skip.`);
+                return;
+              }
+            }
+
             // Gate on mergeability + required checks.
             // NOTE: mergeable_state is flaky/transient (often reports `unstable` even when checks are green),
             // so we avoid using it as the primary signal.
@@ -103,8 +127,31 @@ jobs:
               return;
             }
 
+            // Author check: verify all PR commits are from trusted authors
+            // exempt-author-check label bypasses this check
+            if (!labels.includes('exempt-author-check')) {
+              const { data: repoContent } = await github.rest.repos.getContent({
+                owner, repo, path: 'TRUSTED_AGENTS.md', ref: 'main',
+              });
+              const trusted = Buffer.from(repoContent.content, 'base64').toString()
+                .split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+              const normalize = (n) => n ? n.replace(/\[bot\]$/, '') : n;
+              const trustedSet = new Set(['thepagent', 'copilot', 'github-actions', ...trusted]);
+
+              const { data: commits } = await github.rest.pulls.listCommits({
+                owner, repo, pull_number: prNumber, per_page: 100,
+              });
+              const invalidAuthors = [...new Set(
+                commits.map(c => c.author?.login).filter(n => n && !trustedSet.has(normalize(n)))
+              )];
+              if (invalidAuthors.length) {
+                core.info(`PR #${prNumber} has untrusted commit authors: ${invalidAuthors.join(', ')}; skip.`);
+                await github.rest.issues.addLabels({ owner, repo, issue_number: prNumber, labels: ['invalid-author'] });
+                return;
+              }
+            }
+
             const requiredChecks = [
-              'check-author', // Check Commit Author
               'check',        // Block Forbidden Files
             ];
 

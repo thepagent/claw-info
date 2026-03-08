@@ -130,7 +130,7 @@ OpenClaw 為了提高快取命中與避免不必要的抖動，會對每個 sess
 - **Timeout / 連線錯誤 / 類似速率限制的超時**
   - 通常也視為「暫時性」：會進入 **cooldown**，並輪換到下一個 profile。
 - **Authentication errors**（憑證失效/過期）
-  - 可能會被視為需要重新登入/授權；在可輪換的前提下，會嘗試下一個 profile。
+  - 可能會被視為與需要重新登入/授權；在可輪換的前提下，會嘗試下一個 profile。
 - **Out of quota / credits 不足 / 計費（billing）類錯誤**
   - 通常視為「非暫時性」：會把該 profile 標記為 **disabled**（較長退避），在 disabled 期間 **round-robin 會跳過它**，改用下一個可用 profile。
 
@@ -183,6 +183,31 @@ openclaw models auth add
 
 新增完成後，建議用 `openclaw models status` 檢查 profiles 是否就位。
 
+### ⚡️ 進階技巧：手動新增 OAuth Profile（繞過 `default` 覆蓋問題）
+
+若你在執行 `openclaw models auth login --provider openai-codex` 時遇到 `Error: No provider plugins found`，且使用 `openclaw onboard --auth-choice openai-codex` 會直接覆蓋原本的 `openai-codex:default` token，可參考以下手動操作流程：
+
+1. **備份與重新命名舊 Profile**：
+   開啟 `~/.openclaw/agents/main/agent/auth-profiles.json`，將 `openai-codex:default` 的內容複製一份貼在後面，並將 key 改成你自訂的名字（例如 `openai-codex:JARVIS`）。
+   
+   ```json
+   "openai-codex:default": { ... },
+   "openai-codex:JARVIS": {
+     "type": "oauth",
+     "provider": "openai-codex",
+     "access": "<YOUR_ACCESS_TOKEN>",
+     "refresh": "<YOUR_REFRESH_TOKEN>",
+     "expires": 1772774233911,
+     "accountId": "<YOUR_ACCOUNT_ID>"
+   }
+   ```
+
+2. **重新跑授權流程**：
+   執行 `openclaw onboard --auth-choice openai-codex`。這會產生一組新的 OAuth 流程，並將取得的新 token 再次寫回 `openai-codex:default`。
+
+3. **結果**：
+   此時你就會同時擁有原本被改名的舊 Profile 以及剛產生的 `default` Profile，達成多個帳號輪替的效果。
+
 ---
 
 ## 如何強制使用特定 Profile？（避免自動輪換）
@@ -226,4 +251,3 @@ openclaw models auth add
 ## 參考
 
 - OpenClaw docs（概念）：Model failover / auth profiles rotation（上游文件）
-

@@ -96,6 +96,15 @@ az keyvault secret show \
   --name my-api-key \
   --query value \
   --output tsv
+
+# 阿里雲 Secrets Manager (使用 JSON 輸出更穩健)
+aliyun kms GetSecretValue \
+  --SecretName my-secret \
+  --region cn-hangzhou \
+  --output json | jq -r '.SecretData'
+
+# 注意：Aliyun CLI/API 回應格式可能因版本/區域而異
+# 建議先查看完整 JSON 回應再調整 jq 解析欄位
 ```
 
 > ⚠️ `exec` 是非原生整合，openclaw 只讀取 stdout，不直接整合這些服務。
@@ -358,7 +367,7 @@ exec provider 期望 stdout 輸出格式：
         "source": "exec",
         "command": "/home/pahud/bin/aws-wrapper.sh",
         "timeoutMs": 3000,
-        "jsonOnly": false
+        "jsonOnly": true
       }
     }
   }
@@ -438,6 +447,274 @@ openclaw secrets audit  # plaintext=0 即成功
 若使用 IAM Identity Center，需透過 `sso-admin put-inline-policy-to-permission-set` 附加，再 `provision-permission-set` 生效。
 
 ---
+
+## 實戰範例：阿里雲 Secrets Manager
+
+以下為將 `ollama-cloud` provider 的 `apiKey` 遷移至阿里雲 Secrets Manager（凭据管家）的完整流程。
+
+### 架構圖
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│                        openclaw gateway                         │
+│                                                                 │
+│  openclaw.json                                                  │
+│  ┌─────────────────────────────────────────┐                   │
+│  │ ollama-cloud.apiKey:                    │                   │
+│  │   { source: "exec",                     │                   │
+│  │     provider: "aliyun_secrets_manager", │                   │
+│  │     id: "ollama-cloud-apikey" }         │                   │
+│  └────────────────────┬────────────────────┘                   │
+│                       │ 啟動時解析 SecretRef                    │
+│                       ▼                                         │
+│  ┌────────────────────────────────────────┐                    │
+│  │         Secrets 解析引擎               │                    │
+│  │  1. 找到 provider: aliyun_secrets_mgr  │                    │
+│  │  2. 執行 command (exec source)         │                    │
+│  └────────────────────┬───────────────────┘                    │
+│                       │ spawn                                   │
+│                       ▼                                         │
+│  ┌────────────────────────────────────────┐                    │
+│  │       ~/bin/aliyun-wrapper.sh          │                    │
+│  │  (user-owned, chmod 700)               │                    │
+│  │                                        │                    │
+│  │  aliyun kms GetSecretValue             │                    │
+│  │    --SecretName openclaw/secrets       │                    │
+│  └────────────────────┬───────────────────┘                    │
+│                       │ stdout                                  │
+└───────────────────────┼─────────────────────────────────────────┘
+                        │ Aliyun API call
+                        ▼
+          ┌─────────────────────────────────────┐
+          │    阿里雲 Secrets Manager           │
+          │    (凭据管家)                       │
+          │    secret: openclaw/secrets         │
+          │  ┌────────────────────────────┐     │
+          │  │ {                          │     │
+          │  │  "ollama-cloud-            │     │
+          │  │    apikey": "sk-..."       │     │
+          │  │ }                          │     │
+          │  └────────────────────────────┘     │
+          └─────────────────────────────────────┘
+                        │
+                        │ JSON response
+                        ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  aliyun-wrapper.sh 輸出（exec protocol v1）：                    │
+│  {                                                              │
+│    "protocolVersion": 1,                                        │
+│    "values": { "ollama-cloud-apikey": "sk-..." }               │
+│  }                                                              │
+│                       │                                         │
+│                       ▼                                         │
+│  Secrets 解析引擎取出 values["ollama-cloud-apikey"]              │
+│  → 注入記憶體，永不寫回 openclaw.json                            │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 1. 安裝阿里雲 CLI
+
+```bash
+# macOS
+brew install aliyun-cli
+
+# Linux
+curl -O https://aliyuncli.alicdn.com/aliyun-cli-linux-latest-amd64.tgz
+tar xzf aliyun-cli-linux-latest-amd64.tgz
+sudo mv aliyun /usr/local/bin/
+```
+
+配置認證：
+
+```bash
+aliyun configure
+# 輸入 Access Key ID、Access Key Secret、Region ID（如 cn-hangzhou）
+```
+
+### 2. 建立 Secret（JSON 格式，可存多個 key）
+
+```bash
+# 建立通用凭据
+aliyun kms CreateSecret \
+  --SecretName "openclaw/secrets" \
+  --SecretData '{"ollama-cloud-apikey": "your-api-key-here"}' \
+  --VersionId "v1" \
+  --SecretDataType "text" \
+  --region cn-hangzhou
+```
+
+> 建議用單一 JSON secret 存放所有 openclaw 相關 key，方便統一管理。
+
+### 3. 建立 exec provider wrapper script
+
+openclaw exec provider 要求 `command` 必須由當前使用者擁有（不可為 root 擁有或 symlink）。建立 wrapper：
+
+```bash
+cat > ~/bin/aliyun-wrapper.sh << 'EOF'
+#!/bin/bash
+set -euo pipefail
+
+# OpenClaw exec provider wrapper for Aliyun Secrets Manager
+# Reads secrets and outputs in OpenClaw exec protocol format
+
+SECRET_NAME="${1:-openclaw/secrets}"
+REGION="${2:-cn-hangzhou}"
+
+# Fetch secret value as JSON
+# Note: Aliyun CLI/API response format may vary by version/region
+RAW=$(aliyun kms GetSecretValue \
+  --SecretName "$SECRET_NAME" \
+  --region "$REGION" \
+  --output json 2>/dev/null) || {
+  echo '{"protocolVersion":1,"values":{},"errors":{"_resolver":{"message":"Failed to fetch secret"}}}' 
+  exit 0  # exit 0 so openclaw parses the errors field
+}
+
+# Extract SecretData using jq (more robust than parsing table output)
+SECRET_DATA=$(echo "$RAW" | jq -r '.SecretData // empty')
+
+if [ -z "$SECRET_DATA" ]; then
+  echo '{"protocolVersion":1,"values":{},"errors":{"_resolver":{"message":"SecretData field not found"}}}' 
+  exit 0  # exit 0 so openclaw parses the errors field
+fi
+
+# Output in OpenClaw exec protocol format
+# Assumes SecretData is already a JSON object with key-value pairs
+echo "$SECRET_DATA" | jq -c '{protocolVersion: 1, values: .}'
+EOF
+chmod 700 ~/bin/aliyun-wrapper.sh
+```
+
+> **為什麼用 `--output json` + `jq`？**  
+> 表格輸出 (`cols/rows`) 對多行內容、CLI 版本差異、錯誤訊息非常敏感。JSON 解析更穩健，且 `jq` 廣泛預裝於現代 Linux/macOS。
+
+exec provider 期望 stdout 輸出格式：
+
+```json
+{ "protocolVersion": 1, "values": { "ollama-cloud-apikey": "..." } }
+```
+
+> **注意**：Aliyun CLI/API 回應格式可能因版本或區域而異。若 `jq` 解析失敗，建議先執行 `aliyun kms GetSecretValue --output json` 查看完整回應結構，再調整 `.SecretData` 路徑。
+
+### 4. 設定 exec provider（`openclaw.json`）
+
+```json
+{
+  "secrets": {
+    "providers": {
+      "aliyun_secrets_manager": {
+        "source": "exec",
+        "command": "~/bin/aliyun-wrapper.sh",
+        "timeoutMs": 5000,
+        "jsonOnly": true
+      }
+    }
+  }
+}
+```
+
+### 5. 套用 SecretRef（`secrets apply` plan）
+
+```json
+{
+  "version": 1,
+  "protocolVersion": 1,
+  "targets": [
+    {
+      "type": "models.providers.apiKey",
+      "path": "models.providers.ollama-cloud.apiKey",
+      "providerId": "ollama-cloud",
+      "ref": {
+        "source": "exec",
+        "provider": "aliyun_secrets_manager",
+        "id": "ollama-cloud-apikey"
+      }
+    }
+  ],
+  "options": { "scrubEnv": true }
+}
+```
+
+```bash
+openclaw secrets apply --from /tmp/secrets-plan.json --dry-run  # 預覽
+openclaw secrets apply --from /tmp/secrets-plan.json            # 套用
+```
+
+### 6. 套用後的 `openclaw.json`（apiKey 欄位）
+
+```json
+{
+  "models": {
+    "providers": {
+      "ollama-cloud": {
+        "baseUrl": "https://ollama.com/v1",
+        "apiKey": {
+          "source": "exec",
+          "provider": "aliyun_secrets_manager",
+          "id": "ollama-cloud-apikey"
+        },
+        "api": "openai-completions"
+      }
+    }
+  }
+}
+```
+
+### 7. 驗證
+
+```bash
+openclaw secrets audit  # plaintext=0 即成功
+```
+
+### RAM 權限需求
+
+使用阿里雲 RAM（資源訪問管理）授權時，需要以下權限：
+
+```json
+{
+  "Version": "1",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "kms:GetSecretValue",
+        "kms:CreateSecret",
+        "kms:PutSecretValue",
+        "kms:DescribeSecret",
+        "kms:ListSecrets"
+      ],
+      "Resource": [
+        "acs:kms:cn-hangzhou:*:secret/openclaw/*"
+      ]
+    }
+  ]
+}
+```
+
+建立自定義策略並附加至 RAM 用戶或角色：
+
+```bash
+# 建立自定義策略
+aliyun ram CreatePolicy \
+  --PolicyName OpenClawSecretsAccess \
+  --PolicyDocument '{
+    "Version": "1",
+    "Statement": [{
+      "Effect": "Allow",
+      "Action": ["kms:GetSecretValue", "kms:CreateSecret", "kms:PutSecretValue", "kms:DescribeSecret"],
+      "Resource": ["acs:kms:cn-hangzhou:*:secret/openclaw/*"]
+    }]
+  }'
+
+# 附加策略至 RAM 用戶
+aliyun ram AttachPolicyToUser \
+  --PolicyType Custom \
+  --PolicyName OpenClawSecretsAccess \
+  --UserName your-username
+```
+
+> 建議使用 RAM 角色（Role）搭配 STS 臨時憑證，避免長期憑證洩漏風險。
+
 
 ## Cloudflare Workers Secrets 介接注意事項
 
