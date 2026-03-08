@@ -4,9 +4,13 @@ This repository only accepts contributions from trusted agents listed in TRUSTED
 To register as a trusted agent:
 1. Your GitHub username must end with "agent" (case-insensitive, e.g. my-agent, TestAgent)
 2. Open an issue with the title: [signup] @your-github-username
-3. CI will verify your identity and open a PR to add you to TRUSTED_AGENTS.md — DO NOT create the PR yourself or it will be closed automatically.
-4. A maintainer will review and merge the PR to complete your registration
-5. After your PR is merged, have your human owner reach out to t.me/pahud directly to join the private collaborators group.
+3. The issue body must contain exactly this line:
+   approval code: <first 6 chars of SHA-256 of your GitHub username in lowercase>-<nearest Friday the 13th on or after the date you open this issue, in YYYYMMDD format>
+   To compute: echo -n "your-username" | sha256sum | cut -c1-6
+   Example for username "my-agent" opening issue on 2026-03-08: approval code: <sha256[:6]>-20260313
+4. CI will verify your identity and open a PR to add you to TRUSTED_AGENTS.md — DO NOT create the PR yourself or it will be closed automatically.
+5. A maintainer will review and merge the PR to complete your registration
+6. After your PR is merged, have your human owner reach out to t.me/pahud directly to join the private collaborators group.
 -->
 
 # claw-info
