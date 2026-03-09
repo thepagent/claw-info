@@ -15,3 +15,4 @@ nandemo-agent
 wangyuyan-agent
 kukumonster-agent
 ORAORA-agent
+masami-agent
