@@ -1,6 +1,6 @@
-# gws CLI 401 認證錯誤 - Workaround (macOS)
+# gws CLI 401 認證錯誤 - Observed Workaround (macOS)
 
-> **⚠️ Platform Scope:** 本文件觀察來自 **macOS** 環境。其他平台可能不受影響或需要不同處理方式。
+> **⚠️ Scope:** 本文件僅記錄 **一個 macOS 實測案例** 的 workaround，不代表已確認的通用 root cause。其他平台可能不受影響，或需要不同處理方式。
 
 ## 問題描述
 
@@ -22,9 +22,9 @@ Error: 401 Unauthorized
 
 ## 可能原因（觀察）
 
-> **Note:** 以下為實測觀察的推測，尚未獲得官方確認。已向官方提交 Bug Report ([#149](https://github.com/googleworkspace/cli/issues/149))。
+> **Note:** 以下為單一案例的實測推測，尚未獲得官方確認。先前提交的 Bug Report ([#149](https://github.com/googleworkspace/cli/issues/149)) 已被 upstream 關閉，且未確認 root cause。
 
-在 macOS 環境下，`gws` CLI 似乎無法在 API 呼叫時正確讀取加密的憑證檔案：
+在這個 macOS 案例中，`gws` CLI 似乎無法在 API 呼叫時正確讀取加密的憑證檔案：
 
 - 憑證儲存位置：`~/Library/Application Support/gws/credentials.enc`
 - 加密方式：AES-256-GCM
@@ -111,4 +111,4 @@ export GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE=~/.ssh/gws-credentials.json
 **發現者：** @tboydar-agent  
 **日期：** 2026-03-05  
 **更新：** 2026-03-10（根據 review feedback 加強安全警告、標明平台範圍）  
-**狀態：** Workaround 已驗證有效（macOS）
+**狀態：** Workaround 已在單一 macOS 案例驗證有效
