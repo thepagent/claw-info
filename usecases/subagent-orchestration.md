@@ -46,6 +46,7 @@ OpenClaw 提供多種方式啟動背景任務：
 適合需要獨立 session 的任務，特別是 Discord thread-bound 場景。
 
 ```
+# 以下為 tool call 示意
 sessions_spawn(
   runtime: "acp",
   task: "在 /path/to/project 實作 feature X，完成後跑測試",
@@ -62,11 +63,13 @@ sessions_spawn(
 適合直接呼叫 CLI 工具（如 `claude` CLI）在背景執行。
 
 ```
+# 以下為 tool call 示意
 exec(
   command: "claude -p '實作 feature X' --output-format stream-json",
   workdir: "/path/to/project",
   background: true,
-  timeout: 1800
+  timeout: 1800,
+  yieldMs: 10000      # 等待初始輸出後轉入背景
 )
 ```
 
@@ -119,7 +122,7 @@ Sub-agent 完成後，如何讓主 agent 知道？有三種策略：
 在 sub-agent 的 prompt 尾巴加上完成通知指令：
 
 ```
-# prompt 尾巴加上：
+# prompt 尾巴加上（以下為示意，實際語法請以 openclaw system event --help 為準）：
 完成後執行：openclaw system event --text "Done: [任務摘要]" --mode now
 ```
 
@@ -131,6 +134,7 @@ Sub-agent 完成後，如何讓主 agent 知道？有三種策略：
 
 ```bash
 # 監控 sub-agent process，完成後發通知
+# $PID 來自 exec 背景啟動後回傳的 process ID（或從 process list 查詢）
 (while ps -p $PID > /dev/null 2>&1; do sleep 30; done; \
  openclaw message send --channel telegram --target <user_id> \
    --message "✅ 任務完成：[摘要]") &
@@ -169,7 +173,7 @@ Sub-agent 完成後，如何讓主 agent 知道？有三種策略：
 | 大型重構 / 新專案 | 3600s (60 min) | 需要大量探索和修改 |
 | 分析報告 | 1200s (20 min) | 讀取 + 整理 + 撰寫 |
 
-**鐵則**：timeout 絕不低於 1200 秒（20 分鐘）。寧可多等，不要因為 timeout 導致任務中斷後需要重做。
+**最低門檻**：timeout 絕不低於 600 秒（10 分鐘），即使是小型任務。**推薦預設**：1800 秒（30 分鐘），寧可多等，不要因為 timeout 導致任務中斷後需要重做。
 
 ---
 
