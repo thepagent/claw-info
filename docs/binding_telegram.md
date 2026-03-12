@@ -1,4 +1,41 @@
-# Telegram 討論串（Topic）綁定 ACP 代理
+# Telegram Binding 指南
+
+openclaw 的 `bindings` 設定支援兩種 Telegram 綁定模式：
+
+| 模式 | 說明 | `match` 欄位 |
+|---|---|---|
+| **DM Binding** | 將特定 bot 帳號的私訊（DM）路由到指定 agent | 僅含 `channel` + `accountId`，無 `peer` |
+| **Thread/Topic Binding** | 將群組中特定 Topic 的訊息路由到指定 agent | 含 `peer.kind: "group"` + `peer.id: "<groupId>:topic:<threadId>"` |
+
+---
+
+## DM Binding
+
+DM Binding 將某個 Telegram bot 帳號收到的所有私訊，路由到指定的 agent。
+
+### 設定範例
+
+```json
+{
+  "bindings": [
+    {
+      "agentId": "main",
+      "match": {
+        "channel": "telegram",
+        "accountId": "kong-ming"
+      }
+    }
+  ]
+}
+```
+
+- `accountId`：對應的 Telegram bot 帳號 ID（在 `channels.telegram.accounts` 中定義）
+- 無 `peer` 欄位：匹配該帳號下所有私訊
+- 路由優先順序：`binding.peer` > `binding.account`，即若同一帳號同時有 DM binding 與 Topic binding，Topic binding 優先
+
+---
+
+## Thread/Topic Binding
 
 ## 什麼是 Thread/Topic ACP Binding？
 
