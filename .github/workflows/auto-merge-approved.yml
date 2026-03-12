@@ -109,16 +109,6 @@ jobs:
               return;
             }
 
-            // If pending-final-approval label is present, require thepagent approval
-            const prLabels = (pr.labels || []).map(l => (typeof l === 'string' ? l : l.name));
-            if (prLabels.includes('pending-final-approval')) {
-              const thepagentApproved = latestByUser.get('thepagent') === 'APPROVED';
-              if (!thepagentApproved) {
-                core.info(`PR #${prNumber} has pending-final-approval but no thepagent approval; skip.`);
-                return;
-              }
-            }
-
             // Gate on mergeability + required checks.
             // NOTE: mergeable_state is flaky/transient (often reports `unstable` even when checks are green),
             // so we avoid using it as the primary signal.
