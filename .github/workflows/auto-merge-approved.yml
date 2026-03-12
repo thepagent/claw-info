@@ -5,7 +5,7 @@ on:
   # WARNING: This workflow uses pull_request_target (has access to secrets).
   # NEVER add actions/checkout here — doing so would expose secrets to fork code.
   pull_request_target:
-    types: [opened, reopened, synchronize, labeled, unlabeled, ready_for_review]
+    types: [labeled]
 
   # Re-evaluate when a check suite completes (so we can merge right after CI turns green)
   check_suite:
