@@ -36,13 +36,20 @@ openclaw doctor --fix
 └  Done
 ```
 
-若有 legacy cron 需要遷移，doctor 會顯示：
+若有 legacy cron 需要遷移，doctor 會在 State integrity 段落列出偵測結果，例如：
+
 ```
-◇  Cron migration
-│  - Migrated 2 jobs to new delivery format
-│  - Removed legacy notify metadata from 3 jobs
-└  Done
+◇  State integrity
+│  - Legacy cron job storage detected at ~/.openclaw/cron/jobs.json.
+│  - 1 job still uses legacy `jobId`
+│  - 1 job still uses `schedule.cron`
+│  - 1 job still uses top-level payload fields
+│  - 1 job still uses top-level delivery fields
+│  Repair with openclaw doctor --fix to normalize the store before the
+│  next scheduler run.
 ```
+
+doctor 會靜默地將 jobs.json 改寫為新格式（`id`、`schedule.expr`、嵌套 `payload`/`delivery`），無需手動介入。
 
 執行後重新確認：
 ```bash
