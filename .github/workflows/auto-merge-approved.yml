@@ -1,10 +1,6 @@
 name: Auto-merge approved PRs
 
 on:
-  # Re-evaluate when someone approves
-  pull_request_review:
-    types: [submitted]
-
   # Re-evaluate when labels change, new commits are pushed, or PR is opened/reopened
   # WARNING: This workflow uses pull_request_target (has access to secrets).
   # NEVER add actions/checkout here — doing so would expose secrets to fork code.
@@ -91,6 +87,10 @@ jobs:
             }
 
             const labels = (pr.labels || []).map(l => (typeof l === 'string' ? l : l.name));
+            if (!labels.includes('auto-merge')) {
+              core.info(`PR #${prNumber} missing auto-merge label; skip.`);
+              return;
+            }
             if (labels.includes('do-not-merge')) {
               core.info(`PR #${prNumber} has do-not-merge label; skip.`);
               return;
