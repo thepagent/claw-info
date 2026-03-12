@@ -17,49 +17,42 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha || '' }}
-
       - name: Check commit authors
-        env:
-          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
-          LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if echo "$LABELS" | grep -q "exempt-author-check"; then
-            echo "✅ exempt-author-check label found, skipping"
-            exit 0
-          fi
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const prNumber = Number(context.payload.pull_request?.number ?? '${{ inputs.pr_number }}');
 
-          # For workflow_dispatch, fetch the PR head SHA and reset to it
-          if [ -n "${{ inputs.pr_number }}" ] && [ -z "${{ github.event.pull_request.number }}" ]; then
-            HEAD_SHA=$(gh pr view $PR_NUMBER --repo ${{ github.repository }} --json headRefOid -q .headRefOid)
-            git fetch origin $HEAD_SHA
-            git checkout $HEAD_SHA
-          fi
+            // Check exempt label
+            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+            if (pr.labels.some(l => l.name === 'exempt-author-check')) {
+              core.info('exempt-author-check label found, skipping');
+              return;
+            }
 
-          # 動態讀取信任名單，並加入固定系統帳號
-          TRUSTED=$(cat TRUSTED_AGENTS.md | grep -v '^#' | grep -v '^$' | tr '\n' '|' | sed 's/|$//')
-          TRUSTED_PATTERN="thepagent|copilot|github-actions|${TRUSTED}"
-          echo "Checking PR commits for valid authors..."
-          INVALID_COMMITS=$(git log origin/main..HEAD --format='%an <%ae>' | grep -ivE "$TRUSTED_PATTERN" || true)
-          if [ -n "$INVALID_COMMITS" ]; then
-            echo "❌ Found commits with invalid author:"
-            echo "$INVALID_COMMITS"
-            gh pr comment $PR_NUMBER \
-              --repo ${{ github.repository }} \
-              --body "❌ **Check Commit Author failed**
+            // Load trusted logins
+            const { data: file } = await github.rest.repos.getContent({ owner, repo, path: 'TRUSTED_AGENTS.md', ref: 'main' });
+            const trusted = Buffer.from(file.content, 'base64').toString()
+              .split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+            const normalize = (n) => n ? n.replace(/\[bot\]$/, '') : n;
+            const trustedSet = new Set(['thepagent', 'copilot', 'github-actions', ...trusted]);
 
-The following commit authors are not in [TRUSTED_AGENTS.md](../blob/main/TRUSTED_AGENTS.md):
+            // Check each commit's GitHub login
+            const { data: commits } = await github.rest.pulls.listCommits({ owner, repo, pull_number: prNumber, per_page: 100 });
+            const invalid = [...new Set(
+              commits.map(c => c.author?.login).filter(n => n && !trustedSet.has(normalize(n)))
+            )];
 
-\`\`\`
-$INVALID_COMMITS
-\`\`\`
-
-Please ensure your git commit author name matches your entry in \`TRUSTED_AGENTS.md\`. If you have not signed up yet, please follow the [signup instructions](../blob/main/README.md)."
-            exit 1
-          fi
-          echo "✅ All commits are by trusted agents"
+            if (invalid.length) {
+              core.info(`Invalid authors: ${invalid.join(', ')}`);
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: prNumber,
+                body: `❌ **Check Commit Author failed**\n\nThe following GitHub logins are not in [TRUSTED_AGENTS.md](../blob/main/TRUSTED_AGENTS.md):\n\n${invalid.map(n => `- \`${n}\``).join('\n')}\n\nPlease ensure your GitHub account is listed in \`TRUSTED_AGENTS.md\`.`,
+              });
+              core.setFailed(`Untrusted commit authors: ${invalid.join(', ')}`);
+            } else {
+              core.info('✅ All commits are by trusted agents');
+            }
