@@ -161,6 +161,18 @@ trusted_user_ids = [<YOUR_CHAT_ID>]   # 只允許你自己審批
 default_timeout = 60                   # 超時視為拒絕（安全預設）
 ```
 
+> **Timeout 配置說明**
+>
+> `default_timeout` 是本地自訂版本的配置項。若使用 upstream 版本（`cargo install --git ...`），目前主審批流程的 timeout 無法透過 config 直接設定，建議在腳本層控制：
+>
+> ```bash
+> # 對不可逆操作，透過 --timeout 延長等待時間（若 CLI 支援）
+> # 或將任務排在有人值守時段，避免因超時導致中止
+> openfeedback --timeout 300 "準備 git push origin main ..."
+> ```
+>
+> v0.2.0 新增的 `reject_feedback_timeout` 是「拒絕後等待理由」的時間窗，與主審批 timeout 是不同的配置。
+
 詳細安裝請見 [openfeedback README](https://github.com/antx-code/openfeedback)。
 
 ---
