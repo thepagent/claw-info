@@ -21,40 +21,31 @@ Isolated session 的 cron job **不再能**透過以下方式發送通知：
 openclaw doctor --fix
 ```
 
-若有需要遷移的 legacy cron storage 或 notify/webhook delivery metadata，doctor 會自動偵測並修復。
+若有需要遷移的 legacy cron storage，doctor 會在 **Cron** 段落列出偵測結果。
 
 **實際執行範例（Linux VPS, v2026.3.11）：**
 
-無舊版 cron 需要遷移時輸出：
+無舊版 cron 需要遷移時，不會出現 Cron 段落，只顯示其他系統檢查結果。
+
+若有 legacy cron 需要遷移，doctor 的 **Cron** 段落會列出偵測結果：
 
 ```
-┌  OpenClaw doctor
-│
-◇  Doctor warnings
-│  - channels.telegram.groupPolicy is "allowlist" but groupAllowFrom is empty
-│    — all group messages will be silently dropped.
-└  Done
+◇  Cron ────────────────────────────────────────────────────────────────╮
+│                                                                       │
+│  Legacy cron job storage detected at ~/.openclaw/cron/jobs.json.      │
+│  - 1 job still uses legacy `jobId`                                    │
+│  - 1 job still uses `schedule.cron`                                   │
+│  - 3 jobs needs payload kind normalization                            │
+│  - 1 job still uses top-level payload fields                          │
+│  - 1 job still uses top-level delivery fields                         │
+│  Repair with openclaw doctor --fix to normalize the store before the  │
+│  next scheduler run.                                                  │
+│                                                                       │
+╰───────────────────────────────────────────────────────────────────────╯
 ```
 
-若有 legacy cron 需要遷移，doctor 會在 State integrity 段落列出偵測結果，例如：
-
-```
-◇  State integrity
-│  - Legacy cron job storage detected at ~/.openclaw/cron/jobs.json.
-│  - 1 job still uses legacy `jobId`
-│  - 1 job still uses `schedule.cron`
-│  - 1 job still uses top-level payload fields
-│  - 1 job still uses top-level delivery fields
-│  Repair with openclaw doctor --fix to normalize the store before the
-│  next scheduler run.
-```
-
-doctor 會靜默地將 jobs.json 改寫為新格式（`id`、`schedule.expr`、嵌套 `payload`/`delivery`），無需手動介入。
-
-執行後重新確認：
-```bash
-openclaw cron list
-```
+> ⚠️ **注意：** `openclaw doctor --fix` 只偵測並報告 legacy job，**不會自動修改 job schema**。
+> 受影響的 job 需要手動刪除後以新格式重新建立（見下方「遷移後正確的 Delivery 配置」）。
 
 ### 方法二：手動檢查 cron 配置
 
@@ -62,7 +53,16 @@ openclaw cron list
 openclaw cron list
 ```
 
-若有 job 的 `session` 為 `isolated` 且依賴通知，需要確認 delivery 方式是否正確。
+若有 job 的 `session` 為 `isolated` 且依賴通知，需要確認 delivery 方式是否已更新為 `--announce`。
+
+---
+
+## 遷移步驟
+
+1. 執行 `openclaw cron list` 找出所有 isolated job
+2. 記錄各 job 的 `--message`、`--every`/`--cron`、`--name` 等設定
+3. 刪除舊 job：`openclaw cron rm <job-id>`
+4. 以新格式重新建立（見下方範例）
 
 ---
 
@@ -138,11 +138,15 @@ openclaw cron runs
 
 **Q：升級後 cron job 還在跑，但 Telegram 沒收到通知？**
 
-大概率是舊版 fallback 路徑被移除了。檢查 job 是否有 `--announce --channel telegram`，沒有就補上並重新建立。
+大概率是舊版 fallback 路徑被移除了。檢查 job 是否有 `--announce --channel telegram`，沒有就刪掉重建。
+
+**Q：`openclaw doctor --fix` 說有 legacy job，我需要手動處理嗎？**
+
+是。doctor 只偵測報告，不會自動修改 job schema。需要手動刪除舊 job 並以新格式重建。
 
 **Q：`openclaw doctor --fix` 說沒有問題，但通知還是沒來？**
 
-doctor 只遷移 storage 格式，不會自動補 `--announce`。需要手動確認每個 isolated job 的通知方式。
+doctor 不檢查 delivery 設定的業務邏輯。需要手動確認每個 isolated job 是否有加 `--announce --channel <channel>`。
 
 **Q：想讓 cron job 結果出現在 main session 的對話裡？**
 
@@ -152,6 +156,6 @@ doctor 只遷移 storage 格式，不會自動補 `--announce`。需要手動確
 
 ## 延伸閱讀
 
-- [OpenClaw cron 文件](https://docs.openclaw.ai/cli/cron)（文件站上線後生效）
+- [OpenClaw cron 文件](https://docs.openclaw.ai/cli/cron)
 - [cron-automated-workflows.md](./cron-automated-workflows.md) — 定期任務設定參考
 - 原始 PR：[#40998](https://github.com/openclaw/openclaw/pull/40998)
