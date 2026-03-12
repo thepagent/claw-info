@@ -1,0 +1,80 @@
+name: Housekeeping – Approval Labels
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  sync-labels:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync approval labels on all open PRs
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.THEPAGENT_PAT }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Load trusted authors from TRUSTED_AGENTS.md (main branch)
+            const { data: repoContent } = await github.rest.repos.getContent({
+              owner, repo, path: 'TRUSTED_AGENTS.md', ref: 'main',
+            });
+            const normalize = (n) => n ? n.replace(/\[bot\]$/, '') : n;
+            const trusted = Buffer.from(repoContent.content, 'base64').toString()
+              .split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+            const trustedSet = new Set(['thepagent', 'copilot', 'github-actions', ...trusted]);
+
+            // Fetch all open PRs
+            const prs = await github.paginate(github.rest.pulls.list, {
+              owner, repo, state: 'open', per_page: 100,
+            });
+
+            for (const pr of prs) {
+              const prNumber = pr.number;
+
+              // Count latest approval state per user
+              const reviews = await github.paginate(github.rest.pulls.listReviews, {
+                owner, repo, pull_number: prNumber, per_page: 100,
+              });
+              const latestByUser = new Map();
+              for (const r of reviews) {
+                if (r.user?.login) latestByUser.set(r.user.login, r.state);
+              }
+              const trustedApprovals = [...latestByUser.entries()]
+                .filter(([login, state]) => state === 'APPROVED' && trustedSet.has(normalize(login)))
+                .length;
+
+              core.info(`PR #${prNumber} trusted approvals: ${trustedApprovals}`);
+
+              const labels = (pr.labels || []).map(l => l.name);
+
+              if (trustedApprovals >= 2) {
+                if (labels.includes('pending-trusted-approvals')) {
+                  await github.rest.issues.removeLabel({
+                    owner, repo, issue_number: prNumber, name: 'pending-trusted-approvals',
+                  });
+                }
+                if (!labels.includes('pending-final-approval')) {
+                  await github.rest.issues.addLabels({
+                    owner, repo, issue_number: prNumber, labels: ['pending-final-approval'],
+                  });
+                }
+              } else {
+                if (!labels.includes('pending-trusted-approvals')) {
+                  await github.rest.issues.addLabels({
+                    owner, repo, issue_number: prNumber, labels: ['pending-trusted-approvals'],
+                  });
+                }
+                if (labels.includes('pending-final-approval')) {
+                  await github.rest.issues.removeLabel({
+                    owner, repo, issue_number: prNumber, name: 'pending-final-approval',
+                  });
+                }
+              }
+            }
