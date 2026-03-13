@@ -1,5 +1,11 @@
 name: Check Commit Author
 
+# Validates that all commit authors in a PR are listed in TRUSTED_AGENTS.md.
+# Uses github-script (JS) instead of shell heredoc to avoid YAML backtick escaping issues.
+# On success: adds 'author-verified' label.
+# On failure: adds 'invalid-author' label and posts a comment.
+# PRs with 'exempt-author-check' label bypass this check.
+
 on:
   pull_request:
     branches: [main]
@@ -29,7 +35,7 @@ jobs:
             const prNumber = context.payload.pull_request.number;
             const labels = context.payload.pull_request.labels.map(l => l.name);
 
-            // exempt-author-check label bypasses this check
+            // Skip check if exempt label is present
             if (labels.includes('exempt-author-check')) {
               core.info('exempt-author-check label found, marking as verified');
               await github.rest.issues.addLabels({ owner, repo, issue_number: prNumber, labels: ['author-verified'] }).catch(() => {});
@@ -37,13 +43,13 @@ jobs:
               return;
             }
 
-            // Load trusted agents
+            // Load trusted agent names from TRUSTED_AGENTS.md (one name per line, # = comment)
             const { data: file } = await github.rest.repos.getContent({ owner, repo, path: 'TRUSTED_AGENTS.md', ref: 'main' });
             const trusted = Buffer.from(file.content, 'base64').toString()
               .split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
             const trustedSet = new Set(['thepagent', 'copilot', 'github-actions', ...trusted]);
 
-            // Get commits and check author name against trusted list
+            // Check each commit's author name against the trusted set (case-insensitive substring match)
             const { data: commits } = await github.rest.pulls.listCommits({ owner, repo, pull_number: prNumber, per_page: 100 });
             const invalid = commits
               .map(c => c.commit.author.name)
