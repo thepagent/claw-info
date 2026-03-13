@@ -10,6 +10,11 @@ on:
   pull_request:
     branches: [main]
     types: [opened, reopened, synchronize, labeled]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to check'
+        required: true
 
 permissions:
   contents: read
@@ -32,8 +37,8 @@ jobs:
           script: |
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            const prNumber = context.payload.pull_request.number;
-            const labels = context.payload.pull_request.labels.map(l => l.name);
+            const prNumber = Number(context.payload.pull_request?.number ?? '${{ inputs.pr_number }}');
+            const labels = (context.payload.pull_request?.labels ?? []).map(l => l.name);
 
             // Skip check if exempt label is present
             if (labels.includes('exempt-author-check')) {
