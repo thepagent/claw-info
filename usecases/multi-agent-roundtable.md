@@ -172,6 +172,9 @@ OpenClaw 的 `sessions_spawn` + subagent 機制可直接實作全流程，不需
 - 多個 `sessions_spawn` 並行呼叫 → 實現 Round 1/2/3 的並行回合
 - 主 session 收集所有 completion event 後，再啟動主席 session → Round 4 整合
 
+> **與 Subagent Orchestration（Parallel Sub-Agent）的區別**
+> [Parallel Sub-Agent](../usecases/parallel-subagent.md) 解決的是**任務並行分發**——把獨立工作切分給多個 agent 同時執行，目的是提升效率。Roundtable 解決的是**結構化辯論決策**——讓多個 agent 對同一問題產生分歧、互相質疑，再由主席收斂，目的是提升認知品質。兩者可以組合：用 Parallel Sub-Agent 跑資料蒐集，再用 Roundtable 對結論進行辯證。
+
 ### 最小編排步驟
 
 ```text
