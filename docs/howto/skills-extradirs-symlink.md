@@ -36,6 +36,13 @@ Skipping skill at /path/to/skill: resolved path is outside allowed directory
 
 若你的 skill 實際存放在外部 repo，不要再依賴 symlink 把它掛進 OpenClaw 預設技能目錄。
 
+特別是當你的 skills 採「集中管理」模式，實際的 skill 檔案、scripts、binary 或相關資源都維護在其他位置時，`extraDirs` 是讓 OpenClaw 直接取得這些能力的最快、也最正規的方式。
+
+判斷原則可以寫得更直接：
+
+- 若 skill 目錄在 symlink 解析後的真實路徑（real path）位於 `~/.openclaw/skills` 或 `~/.openclaw/workspace/skills` 之外，請不要再依賴 symlink 載入
+- 這種情況下，應改用 OpenClaw CLI 明確設定 `skills.load.extraDirs`
+
 改用：
 
 ```bash
