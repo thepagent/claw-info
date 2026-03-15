@@ -7,9 +7,7 @@
 
 ## 問題場景
 
-你指派 Codex 分析一個複雜模組，做到一半 gateway 重啟了；或者一個跨天的重構任務，明天想繼續——沒有 `resumeSessionId` 的話，每次都要重新解釋背景。
-
-有了它，agent 接回原本的 session，context 完整保留。
+你指派 Codex 分析一個複雜模組，做到一半 gateway 重啟了；或者一個跨天的重構任務，明天想繼續——沒有 `resumeSessionId` 的話，每次都要重新解釋背景。有了它，agent 接回原本的 session，context 完整保留。
 
 ---
 
@@ -18,9 +16,12 @@
 | Agent | agentId | Session 存放位置 |
 |---|---|---|
 | Codex | `"codex"` | `~/.codex/sessions/YYYY/MM/DD/` |
-| Claude Code | `"claude"` | `~/.claude/projects/<project-path>/` |
+| Claude Code | `"claude"` | `~/.claude/projects/<normalized-project-path>/` |
 
 兩者都實作 `session/load` 協議，`resumeSessionId` 行為一致。
+
+> `<normalized-project-path>` 的生成規則：將 cwd 的每個 `/` 與 `.` 都替換為 `-`。
+> 例如 cwd 為 `/root/.openclaw/workspace` → `-root--openclaw-workspace`
 
 > **注意：** Claude Code 啟動和完成的時間明顯比 Codex 長（實測約 60–90 秒 vs 20–30 秒）。orchestrator 輪詢 session 狀態時應給足等待時間，避免誤判為失敗。
 
@@ -52,21 +53,26 @@
 
 > ⚠️ **關鍵陷阱：** `resumeSessionId` 需要的是 **agent 自身的 session UUID**，不是 OpenClaw 的 `childSessionKey`，也不是 acpx 的 `recordId`——三者長得相似但不同。
 
-**方法 A：orchestrator 自動取（推薦）**
+**方法 A：從 sessions.json 讀取（推薦，並行安全）**
 
-Session 完成後，直接從 agent 的 sessions 目錄讀最新文件名：
+Session 完成後，以 `childSessionKey` 為索引查 `~/.openclaw/agents/<agentId>/sessions/sessions.json`，取出 `acp.identity.acpxSessionId`：
 
 ```bash
-# Codex
-ls -t ~/.codex/sessions/$(date +%Y/%m/%d)/ | head -1 | sed 's/rollout-[^-]*-[^-]*-[^-]*-[^-]*-//' | sed 's/.jsonl//'
-
-# Claude Code
-ls -t ~/.claude/projects/-root--openclaw-workspace/ | head -1 | sed 's/.jsonl//'
+# 以 Codex 為例，將 childSessionKey 換成實際值
+python3 -c "
+import json
+with open('/root/.openclaw/agents/codex/sessions/sessions.json') as f:
+    d = json.load(f)
+key = 'agent:codex:acp:<your-child-session-uuid>'
+print(d[key]['acp']['identity']['acpxSessionId'])
+"
 ```
 
-或在 orchestrator agent 內用 shell exec tool 執行上述指令，把 UUID 存入變數後傳給下一個 `sessions_spawn`。
+Claude Code 同理，路徑改為 `~/.openclaw/agents/claude/sessions/sessions.json`。
 
-**方法 B：手動查**
+orchestrator 內可用 `exec` tool 執行上述指令，把 UUID 存入變數後傳給下一個 `sessions_spawn`。
+
+**方法 B：手動查文件名**
 
 ```bash
 # Codex
@@ -75,9 +81,11 @@ ls -t ~/.codex/sessions/YYYY/MM/DD/
 #                                ↑ 這段就是 resumeSessionId
 
 # Claude Code
-ls -lt ~/.claude/projects/-root--openclaw-workspace/
+ls -lt ~/.claude/projects/<normalized-project-path>/
 # 最新的 .jsonl 文件名（不含副檔名）即為 resumeSessionId
 ```
+
+> 並行跑多個 session 時，`ls -t | head -1` 可能取錯。建議使用方法 A。
 
 ### Step 3：Resume
 
@@ -91,7 +99,7 @@ ls -lt ~/.claude/projects/-root--openclaw-workspace/
 }
 ```
 
-Resume 成功後，agent 會繼續寫入**同一個** session 文件，而不是建立新的——這是確認接回成功的最直接方式。
+Resume 後，agent 通常會繼續寫入同一個 session 文件，可作為成功接回的重要驗證訊號。
 
 ---
 
@@ -129,8 +137,6 @@ task:     你之前記住了一個字串，那個字串是什麼？
 response: 「RESUME-TEST-CLAUDE」 ✅
 ```
 
-Resume 後 Claude Code 繼續寫入同一個 `53c3c86d...jsonl`，確認接回原 session。
-
 ---
 
 ## VPS / Proxy 環境的額外設定
@@ -157,7 +163,7 @@ Codex 用 OpenAI key，通常不需要額外設定。
 
 | 錯誤 | 原因 | 解法 |
 |---|---|---|
-| `acpx exited with code 4` | `resumeSessionId` 傳了錯誤的 UUID（如 acpx recordId）| 去 agent 的 sessions 目錄找正確的 JSONL 文件名 |
+| `acpx exited with code 4` | `resumeSessionId` 傳了錯誤的 UUID（如 acpx recordId）| 改用方法 A 從 `sessions.json` 取 `acpxSessionId` |
 | `acpx exited with code 1` | Claude Code auth 失敗，key 未被 gateway 繼承 | 把 key 寫入 `~/.openclaw/.env`，重啟 gateway |
 | `acpx exited with code 5` | agent 初始化失敗（未安裝或 auth 設定問題）| 先確認 agent CLI 可獨立執行 |
 
@@ -174,9 +180,4 @@ Codex 用 OpenAI key，通常不需要額外設定。
 
 ## 小結
 
-`resumeSessionId` 讓 ACP 編程 session 從「跑完即忘」變成「可持續接力」。最容易踩的坑只有一個：**UUID 取錯**。記住：
-
-- Codex → `~/.codex/sessions/YYYY/MM/DD/rollout-<timestamp>-<UUID>.jsonl`
-- Claude Code → `~/.claude/projects/<path>/<UUID>.jsonl`
-
-文件名裡的 UUID 就是 `resumeSessionId`，對了就通。
+`resumeSessionId` 讓 ACP 編程 session 從「跑完即忘」變成「可持續接力」。取 UUID 最可靠的方式：以 `childSessionKey` 查 `sessions.json`，取 `acp.identity.acpxSessionId`——並行安全，不依賴文件排序。
