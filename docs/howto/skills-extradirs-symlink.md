@@ -7,7 +7,7 @@
 - 2026-03-07 之後，OpenClaw 會追蹤 skill 路徑的 `realpath`。
 - 若 symlink 解析後的真實路徑落在允許目錄外，skill 會被拒絕載入。
 - 常見症狀是 log 出現：`resolved path is outside allowed directory`。
-- 這不是掃描階段看不到 symlink，而是後續的 canonical path 驗證拒絕了它。
+- 這不是「掃描不到 symlink」，而是掃描後的 canonical path 驗證拒絕了 out-of-root 目標。
 - 正確做法不是繼續把外部 skill symlink 進來，而是用 `skills.load.extraDirs` 明確告訴 OpenClaw 去掃描外部技能目錄。
 - `extraDirs` 應指向「技能類別目錄」，不是更上層的父目錄。
 
@@ -43,6 +43,14 @@ Skipping skill at /path/to/skill: resolved path is outside allowed directory
 - 若 skill 目錄在 symlink 解析後的真實路徑（real path）位於 `~/.openclaw/skills` 或 `~/.openclaw/workspace/skills` 之外，請不要再依賴 symlink 載入
 - 這種情況下，應改用 OpenClaw CLI 明確設定 `skills.load.extraDirs`
 
+### 安全性注意事項
+
+`extraDirs` 不是叫你把任何任意路徑都交給 OpenClaw 掃描，而是把「你明確信任的外部技能來源」顯式加入掃描清單。
+
+- 僅將 `extraDirs` 指向你信任、可控、且內容可審查的目錄
+- 不要把來路不明、多人共用、或會被其他流程動態改寫的路徑直接加入 `extraDirs`
+- 相比之下，symlink 載入的問題在於它會把最終真實路徑藏在 alias 後面；`extraDirs` 則是把外部來源明確宣告出來，行為更可預期、也更容易審核
+
 改用：
 
 ```bash
@@ -66,14 +74,14 @@ openclaw gateway restart
 
 OpenClaw 的技能掃描使用 [`listChildDirectories()`](https://github.com/openclaw/openclaw/blob/main/src/agents/skills/workspace.ts#L151-L177)，只掃描一層深度的直接子目錄，並在該層尋找 `SKILL.md`。
 
-因此 `extraDirs` 應該指向：
+實務上，`extraDirs` 應優先指向：
 
 - ✅ 技能類別目錄，例如 `<skills-repo>/skills/git`
 - ✅ 技能類別目錄，例如 `<skills-repo>/skills/infra`
 - ❌ 不要指向 `<skills-repo>/skills/`
 - ❌ 不要指向 `<skills-repo>/`
 
-原因很簡單：
+這樣做的原因是：
 
 - 指向類別目錄時，一層掃描就能找到每個 skill 子目錄裡的 `SKILL.md`
 - 指向更上層父目錄時，一層掃描只會看到 `git/`、`infra/`、`productivity/` 這類資料夾本身，還到不了真正 skill 所在位置
@@ -86,7 +94,7 @@ OpenClaw 的技能掃描使用 [`listChildDirectories()`](https://github.com/ope
 
 在掃描階段，OpenClaw 會列出子目錄。若某個 entry 是 symlink，且其目標是目錄，仍可能被加入掃描結果。
 
-也就是說，**symlink 並不是在第一階段就被拒絕**。
+也就是說，**掃描階段仍可能看見 symlink entry**；真正阻擋外部目標的是後續的 canonical path 驗證。
 
 ```typescript
 if (entry.isSymbolicLink()) {
@@ -129,6 +137,16 @@ openclaw config set skills.load.extraDirs '[
 ]'
 ```
 
+### 替代方案：直接複製進本地 skills 目錄
+
+另一個可行做法，是把 skill 直接複製到 `~/.openclaw/skills` 或 `~/.openclaw/workspace/skills`。
+
+這在單機、單 repo、變動不頻繁的情境下可以工作，但若你的 skills 是集中管理的，通常不如 `extraDirs`：
+
+- 複製容易造成版本漂移
+- 同一份 skill 需要重複同步到多個位置
+- 後續更新時，比較難確認目前生效的是哪一份
+
 ### 3. 重啟 gateway
 
 ```bash
@@ -149,6 +167,8 @@ openclaw skills list --eligible
 
 - `extraDirs` 指到了父目錄，不是技能類別目錄
 - 目標 skill 目錄下沒有 `SKILL.md`
+- `extraDirs` 指到的路徑根本不存在
+- OpenClaw 對 `<skills-repo>` 沒有讀取權限
 - gateway 尚未重啟，仍在使用舊設定
 
 建議檢查：
@@ -157,6 +177,12 @@ openclaw skills list --eligible
 openclaw config get skills.load.extraDirs
 openclaw gateway restart
 openclaw skills list --eligible
+```
+
+並額外確認：
+
+```bash
+ls -la <skills-repo>/skills
 ```
 
 ### 症狀：仍然看到 `Skipping` 警告
