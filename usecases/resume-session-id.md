@@ -53,15 +53,22 @@
 
 > ⚠️ **關鍵陷阱：** `resumeSessionId` 需要的是 **agent 自身的 session UUID**，不是 OpenClaw 的 `childSessionKey`，也不是 acpx 的 `recordId`——三者長得相似但不同。
 
+| ID | 來源 | 格式範例 | 用途 |
+|---|---|---|---|
+| `childSessionKey` | `sessions_spawn` 回傳 | `agent:codex:acp:af9e8993-...` | 查 `sessions.json` 的索引 key |
+| `acpxSessionId` | `sessions.json` → `acp.identity.acpxSessionId` | `019cf1af-0283-7202-a7bf-...`（純 UUID）| 傳給 `resumeSessionId` 的正確值 ✅ |
+| `recordId` | acpx 內部記錄 | 數字或短字串 | 僅 acpx 內部使用，**不可**傳給 `resumeSessionId` |
+
 **方法 A：從 sessions.json 讀取（推薦，並行安全）**
 
 Session 完成後，以 `childSessionKey` 為索引查 `~/.openclaw/agents/<agentId>/sessions/sessions.json`，取出 `acp.identity.acpxSessionId`：
 
 ```bash
 # 以 Codex 為例，將 childSessionKey 換成實際值
+# 路徑依實際安裝位置而定，${HOME} 對應當前登入用戶的 home 目錄
 python3 -c "
-import json
-with open('/root/.openclaw/agents/codex/sessions/sessions.json') as f:
+import json, os
+with open(os.path.expanduser('~/.openclaw/agents/codex/sessions/sessions.json')) as f:
     d = json.load(f)
 key = 'agent:codex:acp:<your-child-session-uuid>'
 print(d[key]['acp']['identity']['acpxSessionId'])
@@ -95,9 +102,12 @@ ls -lt ~/.claude/projects/<normalized-project-path>/
   "runtime": "acp",
   "agentId": "codex",
   "mode": "run",
-  "resumeSessionId": "019cf1af-0283-7202-a7bf-0b336c7e5dcc"
+  "resumeSessionId": "019cf1af-0283-7202-a7bf-0b336c7e5dcc",
+  "runTimeoutSeconds": 300
 }
 ```
+
+> 建議 `runTimeoutSeconds`：Codex 設 `120–300`，Claude Code 設 `300–600`。Claude Code 啟動較慢（實測 60–90 秒），預設值偏短容易誤判超時。
 
 Resume 後，agent 通常會繼續寫入同一個 session 文件，可作為成功接回的重要驗證訊號。
 
