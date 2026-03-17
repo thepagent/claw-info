@@ -2,6 +2,19 @@
 
 本文說明：當你用 symlink 把外部 skills repo 掛進 OpenClaw 的技能目錄時，為什麼在 2026-03-07 之後可能載入失敗，以及正確的替代做法 `skills.load.extraDirs`。
 
+## 目錄
+
+- [TL;DR](#tldr)
+- [症狀](#症狀)
+- [問題原因](#問題原因)
+- [正確解法：使用 `skills.load.extraDirs`](#正確解法使用-skillsloadextradirs)
+- [`extraDirs` 路徑規則](#extradirs-路徑規則)
+- [技術細節](#技術細節)
+- [操作步驟](#操作步驟)
+- [遷移檢查清單](#遷移檢查清單)
+- [故障排除](#故障排除)
+- [延伸閱讀](#延伸閱讀)
+
 ## TL;DR
 
 - 2026-03-07 之後，OpenClaw 會追蹤 skill 路徑的 `realpath`。
