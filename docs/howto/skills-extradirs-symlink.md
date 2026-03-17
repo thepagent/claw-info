@@ -165,6 +165,21 @@ openclaw gateway restart
 openclaw skills list --eligible
 ```
 
+## Migration checklist
+
+若你是從舊的 symlink 做法遷移到 `extraDirs`，可照這個最短流程走：
+
+1. **確認症狀**
+   - 先跑 `openclaw skills list --eligible 2>&1 | grep 'outside allowed directory'`
+   - 確認目前真的是 canonical path 驗證導致載入失敗
+2. **清理舊 symlink 依賴**
+   - 找出仍放在 `~/.openclaw/skills` 或其他技能根目錄中的外部 symlink
+   - 避免新舊做法並存，讓來源判讀混亂
+3. **設定 `extraDirs` 並重啟驗證**
+   - 將 `skills.load.extraDirs` 指向技能類別目錄
+   - `openclaw gateway restart`
+   - 再跑 `openclaw skills list --eligible` 確認已正常載入
+
 ## Troubleshooting
 
 ### 症狀：設定了 `extraDirs` 但還是找不到 skill
