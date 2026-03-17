@@ -87,6 +87,15 @@ OpenClaw 的技能掃描使用 [`listChildDirectories()`](https://github.com/ope
 - ❌ 不要指向 `<skills-repo>/skills/`
 - ❌ 不要指向 `<skills-repo>/`
 
+可以直接對照成下面這種正確 / 錯誤示例：
+
+```text
+✅ <skills-repo>/skills/git          # 技能類別目錄
+✅ <skills-repo>/skills/infra        # 技能類別目錄
+❌ <skills-repo>/skills              # 太上層，一層掃描找不到真正 skill
+❌ <skills-repo>                     # 更寬，會掃到非技能內容
+```
+
 這樣做的原因是：
 
 - 指向類別目錄時，一層掃描就能找到每個 skill 子目錄裡的 `SKILL.md`
