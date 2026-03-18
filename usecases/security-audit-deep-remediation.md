@@ -150,6 +150,7 @@ cp -a "$HOME/Library/LaunchAgents/ai.openclaw.gateway.plist" \
 ```bash
 QDIR="$HOME/.openclaw/quarantine-skills"
 mkdir -p "$QDIR"
+chmod 700 "$QDIR"
 
 mv "/Users/tboydar/.openclaw/workspace/skills/evolver" "$QDIR/"
 mv "/Users/tboydar/.openclaw/workspace/skills/tavily-search" "$QDIR/"
@@ -199,7 +200,11 @@ mv "$HOME/.openclaw/quarantine-skills/tavily-search" \
 
 而 env 雖然不是完美祕密管理方案，但至少能把 secret 從一般設定檔中抽離。
 
+> Security note：將 secret 移到 LaunchAgent environment variables 屬於**風險降低（risk mitigation）**，不是終極祕密保護。對更高安全要求的環境，仍應優先考慮 macOS Keychain 或專用 Secret Manager。
+
 ### 實作範例（Python）
+
+> 注意：下列腳本示範的是「實務上夠用的最小搬移流程」，不是完整事務型（atomic）配置遷移。若你要把中斷風險降到更低，可採用 temp file + replace 寫法，並在修改前先驗證 target plist 路徑與格式。
 
 ```python
 import json, plistlib, os
@@ -256,6 +261,13 @@ openclaw gateway restart
 ## Step 3：驗證修復結果
 
 ### 驗證 gateway 是否正常
+
+除了 `status`，也建議補看啟動後的 log，避免漏掉短暫的重啟失敗循環或 env 未生效問題。
+
+```bash
+openclaw gateway log
+```
+
 
 ```bash
 openclaw gateway status
@@ -416,6 +428,5 @@ openclaw gateway status
 ## See also
 
 - [backup-before-upgrade.md](./backup-before-upgrade.md) — 升級前先備份的自動化做法
-- [agent-security-framework.md](./agent-security-framework.md) — Agent 安全框架與風險邊界
 - [subagent-orchestration.md](./subagent-orchestration.md) — 多 agent 任務編排實戰
 - [OpenClaw troubleshooting](../docs/troubleshooting.md) — 常見故障排查
