@@ -96,6 +96,8 @@ sum_001 (頂層摘要："討論了部署方案並決定用 Docker")
 
 ### 模式二：帶問題直接查 → expand_query
 
+> ⚠️ 此模式會觸發 sub-agent 呼叫，token 成本與延遲通常高於 grep + expand。適合「需要整理答案」的複雜問題；簡單關鍵字搜尋用模式一即可。
+
 當你要回答一個具體問題，但不確定關鍵字時。
 
 ```json
@@ -112,6 +114,8 @@ sum_001 (頂層摘要："討論了部署方案並決定用 Docker")
 3. 用 sub-agent 根據 `prompt` 從展開內容中提取答案
 
 回傳的是整理過的答案，附帶引用的摘要 ID。
+
+> 💡 **參數版本提醒**：`tokenCap`、`maxDepth`、`conversationId` 等參數可能隨 OpenClaw 版本更迭而異。實作前建議先透過工具 schema 或 `lcm_describe` 確認當前版本支援的參數。
 
 ### 模式三：檢查特定摘要的結構 → describe
 
@@ -138,6 +142,8 @@ sum_001 (頂層摘要："討論了部署方案並決定用 Docker")
   "mode": "full_text"
 }
 ```
+
+> 💡 使用 `allConversations: true` 時，建議先用更精確的關鍵字（結合時間/主題詞），避免跨 session 搜尋產生過量雜訊。確認當前 session 搜不到後再擴大範圍。
 
 或指定 conversation：
 
