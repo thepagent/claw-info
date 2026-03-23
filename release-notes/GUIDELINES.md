@@ -16,7 +16,28 @@ Include:
 - Release title with version (no date in title)
 - GitHub Release link (e.g., `[GitHub Release](https://github.com/openclaw/openclaw/releases/tag/v2026.2.15)`)
 
-### 2. Overview
+### 2. Upgrade Overview（升級前必讀）
+
+**Required when the release contains any breaking changes or notable highlights.**
+
+Immediately after the GitHub Release link, include a `## ⚠️ 升級前必讀` section with:
+
+1. **Breaking Changes 摘要** — a table listing each breaking change, its impact, and the required action:
+
+```markdown
+| 項目 | 影響 | 行動 |
+|------|------|------|
+| <change> | <what breaks> | <what to do> |
+```
+
+2. **新功能亮點** — a short bullet list (3–5 items) of the most impactful new features for quick orientation.
+
+**Rules:**
+- Omit this section entirely if the release has no breaking changes and no standout highlights.
+- Keep it concise — this is a quick-reference, not a detailed explanation (details belong in the sections below).
+- Every breaking change rated ⭐⭐⭐ in the Features section **must** appear in this table.
+
+### 3. Overview
 
 Provide a high-level summary using bullet points, grouped by category:
 
@@ -181,6 +202,8 @@ Use star ratings to indicate importance:
 ## Checklist Before Commit
 
 - [ ] GitHub release page reviewed for accuracy
+- [ ] **升級前必讀 section included if release has breaking changes or notable highlights**
+- [ ] **Every ⭐⭐⭐ breaking change appears in the Breaking Changes table**
 - [ ] All items include star ratings
 - [ ] Items sorted by star rating (descending)
 - [ ] All items include PR/Issue numbers (or valid release/advisory links if no PR/Issue)
@@ -197,6 +220,21 @@ Use star ratings to indicate importance:
 # OpenClaw v2026.02.15 版本發佈說明
 
 [GitHub Release](https://github.com/openclaw/openclaw/releases/tag/v2026.2.15)
+
+## ⚠️ 升級前必讀
+
+### Breaking Changes 摘要
+
+| 項目 | 影響 | 行動 |
+|------|------|------|
+| <change> | <what breaks> | <what to do> |
+
+### 新功能亮點
+
+- **Feature A** — 一句話說明
+- **Feature B** — 一句話說明
+
+---
 
 ## 概述
 
@@ -266,4 +304,4 @@ Use star ratings to indicate importance:
 
 ---
 
-*Last Updated: 2026-03-02*
+*Last Updated: 2026-03-23*
