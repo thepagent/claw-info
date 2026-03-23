@@ -11,6 +11,17 @@
 - 四個工具組成檢索鏈：`lcm_grep`（搜）→ `lcm_describe`（看）→ `lcm_expand`（展開）→ `lcm_expand_query`（問答）
 - 實戰用法：先 grep 定位摘要 ID，再 expand 展開到原始訊息層
 - 支援跨 session 搜尋（`allConversations: true`），可以找到其他對話中的內容
+- ⚠️ 跨 session 搜尋僅限同一 workspace/account 的對話，不會觸及其他使用者的資料
+
+### 名詞對照
+
+| 術語 | 說明 |
+|------|------|
+| **LCM**（Lossless Context Management） | OpenClaw 的對話壓縮機制，壓縮但不丟棄原始訊息 |
+| **Compaction** | 壓縮動作本身——把舊訊息歸入摘要，釋放 context window |
+| **Summary（sum_xxx）** | 壓縮產生的摘要節點，保留語義但省略細節 |
+| **Message（msg_xxx）** | 被壓縮掉的原始訊息，仍儲存在 LCM 中可被展開取回 |
+| **DAG** | 摘要的樹狀結構——頂層摘要 → 子摘要 → 原始訊息 |
 
 ---
 
@@ -97,6 +108,8 @@ sum_001 (頂層摘要："討論了部署方案並決定用 Docker")
 ### 模式二：帶問題直接查 → expand_query
 
 > ⚠️ 此模式會觸發 sub-agent 呼叫，token 成本與延遲通常高於 grep + expand。適合「需要整理答案」的複雜問題；簡單關鍵字搜尋用模式一即可。
+>
+> **判斷準則：** 需要從多段訊息中彙整出結論 → 用 `expand_query`；只需找回原文/數字/程式碼片段 → 用模式一（grep + expand）。**預設先試模式一。**
 
 當你要回答一個具體問題，但不確定關鍵字時。
 
@@ -115,7 +128,13 @@ sum_001 (頂層摘要："討論了部署方案並決定用 Docker")
 
 回傳的是整理過的答案，附帶引用的摘要 ID。
 
-> 💡 **參數版本提醒**：`tokenCap`、`maxDepth`、`conversationId` 等參數可能隨 OpenClaw 版本更迭而異。實作前建議先透過工具 schema 或 `lcm_describe` 確認當前版本支援的參數。
+> 💡 **參數版本提醒**：`tokenCap`、`maxDepth`、`conversationId` 等參數可能隨 OpenClaw 版本更迭而異。實作前可用以下方式自我校驗：
+>
+> ```json
+> // 用 lcm_describe 確認當前 schema 支援的欄位
+> { "tool": "lcm_describe", "id": "sum_001" }
+> // 回傳的 metadata 中會列出可用欄位；若參數不存在，工具會回報錯誤而非靜默忽略
+> ```
 
 ### 模式三：檢查特定摘要的結構 → describe
 
@@ -143,7 +162,9 @@ sum_001 (頂層摘要："討論了部署方案並決定用 Docker")
 }
 ```
 
-> 💡 使用 `allConversations: true` 時，建議先用更精確的關鍵字（結合時間/主題詞），避免跨 session 搜尋產生過量雜訊。確認當前 session 搜不到後再擴大範圍。
+> 💡 使用 `allConversations: true` 時：
+> - **權限邊界**：僅搜尋同一 workspace/account 下的對話，不會跨使用者。在多使用者環境中，各使用者的對話資料天然隔離
+> - **降噪建議**：先用更精確的關鍵字（結合時間/主題詞），確認當前 session 搜不到後再擴大範圍
 
 或指定 conversation：
 
