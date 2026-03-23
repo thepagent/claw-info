@@ -1,0 +1,21 @@
+name: Doc Freshness Check
+
+on:
+  schedule:
+    - cron: '0 2 * * 1' # Weekly Monday 02:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check stale / unreviewed docs and open issues
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash .github/scripts/check_freshness.sh
