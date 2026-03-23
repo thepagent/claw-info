@@ -86,6 +86,8 @@
 │                  └─ NO → 建立 issue                 │
 │                            - 上游 release tag 連結  │
 │                            - zh-TW release notes    │
+│                            - 升級前必讀（breaking   │
+│                              changes + highlights） │
 │                            - Acceptance criteria    │
 │                              │                      │
 │                              ▼                      │
@@ -98,6 +100,33 @@
 - `openclaw --version` — 取得目前安裝版本
 - `npm show openclaw version` — 取得 npm 最新版本
 - `gh issue list --state all` — 搜尋 open + closed issue，避免重複建立
+
+## Issue Body 範本
+
+建立 issue 時，body 須包含以下內容：
+
+```
+Generate release notes markdown for OpenClaw **<LATEST>** following our release notes guidelines.
+
+Upstream GitHub Release:
+* https://github.com/openclaw/openclaw/releases/tag/v<LATEST>
+
+Guidelines:
+* `release-notes/GUIDELINES.md` (in this repo)
+
+Tasks:
+* Pull changes/changelog from upstream OpenClaw release/tag v<LATEST>
+* Draft a `release-notes/` markdown file in zh-TW
+* Follow guidelines (分類：功能更新/安全性提升/錯誤修復；每項標註⭐；含用途/解決問題/影響)
+* Include `## ⚠️ 升級前必讀` section with Breaking Changes table and 新功能亮點
+  (required if release has breaking changes; omit if none)
+* Include link(s) to the upstream GitHub Release
+
+Acceptance:
+* New md file committed in claw-info under `release-notes/`
+* 升級前必讀 section present if release has breaking changes
+* Issue closed via PR
+```
 
 ## 2. 通知機制
 
