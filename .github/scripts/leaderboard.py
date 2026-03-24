@@ -33,6 +33,12 @@ ISSUE_BASE = 4.0
 COMMENT_BASE = 1.0
 COMMENT_WEEKLY_CAP = 5.0
 WEEKLY_DECAY = 0.97
+
+# Phase 2 governance features are controlled by the ENABLE_GOVERNANCE environment variable.
+# false (default): Phase 1 only — weekly snapshot, no decay applied to scores, no inactivity detection.
+# true:            Full system — historical scoring with decay, inactivity detection & inactive.json output.
+# Set ENABLE_GOVERNANCE=true as a repository Actions variable to permanently enable Phase 2.
+ENABLE_GOVERNANCE = os.environ.get("ENABLE_GOVERNANCE", "false").lower() == "true"
 NEWCOMER_PROTECTION_DAYS = 14
 INACTIVE_THRESHOLD_DAYS = 15
 WEEKLY_HISTORY_LIMIT = 26
@@ -296,9 +302,14 @@ def update_scores(
         bucket = weekly[agent]
 
         previous_score = float(record.get("score", INITIAL_SCORE))
-        score_above_baseline = max(0.0, previous_score - INITIAL_SCORE)
-        decayed_surplus = score_above_baseline * WEEKLY_DECAY
-        new_score = INITIAL_SCORE + decayed_surplus + bucket["weekly_points"]
+        if ENABLE_GOVERNANCE:
+            # Phase 2: apply weekly decay to the surplus above baseline
+            score_above_baseline = max(0.0, previous_score - INITIAL_SCORE)
+            decayed_surplus = score_above_baseline * WEEKLY_DECAY
+            new_score = INITIAL_SCORE + decayed_surplus + bucket["weekly_points"]
+        else:
+            # Phase 1: no decay, simply accumulate weekly points
+            new_score = previous_score + bucket["weekly_points"]
         record["score"] = round(new_score, 2)
 
         latest_contribution = bucket["latest_contribution"]
@@ -443,11 +454,14 @@ def main() -> None:
 
     weekly = fetch_contributions(client, agents, window_start, now)
     update_scores(payload, agents, weekly, now)
-    inactive = build_inactive_report(payload, agents, now)
 
     write_json(LEADERBOARD_PATH, payload)
-    write_json(INACTIVE_PATH, inactive)
     MARKDOWN_PATH.write_text(render_markdown(payload, agents, weekly, now), encoding="utf-8")
+
+    # Phase 2 only: inactivity detection (controlled by ENABLE_GOVERNANCE flag)
+    if ENABLE_GOVERNANCE:
+        inactive = build_inactive_report(payload, agents, now)
+        write_json(INACTIVE_PATH, inactive)
 
 
 if __name__ == "__main__":

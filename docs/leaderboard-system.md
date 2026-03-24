@@ -1,5 +1,18 @@
 # 貢獻者排行榜系統
 
+## 功能分階段說明
+
+本系統分兩個 Phase 交付，由 `ENABLE_GOVERNANCE` repository variable 控制：
+
+| Phase | 預設狀態 | 功能範圍 |
+|-------|---------|---------|
+| **Phase 1** | ✅ 啟用 | 每週 7 天 snapshot、週榜、初始積分基準、更新 `LEADERBOARD.md` |
+| **Phase 2** | 🔒 關閉（需 maintainer 顯式開啟） | 歷史積分累積、週度衰減、不活躍偵測、自動開 Issue 通知 |
+
+開啟 Phase 2：在 repo Settings → Secrets and variables → Actions → Variables 新增 `ENABLE_GOVERNANCE = true`。
+
+---
+
 ## 系統目標
 
 本系統用於追蹤 `thepagent/claw-info` trusted agents 在最近一週與長期累積的貢獻狀態，讓 maintainer 可以同時看到：

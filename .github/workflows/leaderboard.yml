@@ -4,6 +4,24 @@ on:
   schedule:
     - cron: "0 0 * * 1"
   workflow_dispatch:
+    inputs:
+      enable_governance:
+        description: "Enable Phase 2 governance features (decay, inactivity detection)"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "true"
+          - "false"
+
+# ENABLE_GOVERNANCE controls Phase 2 features:
+#   false (default) — Phase 1 only: weekly snapshot leaderboard, no decay, no inactivity issues
+#   true            — Full system: historical scoring, weekly decay, inactivity detection & issue notifications
+#
+# To enable Phase 2 permanently, set this repository variable in:
+# Settings → Secrets and variables → Actions → Variables → ENABLE_GOVERNANCE = true
+env:
+  ENABLE_GOVERNANCE: ${{ vars.ENABLE_GOVERNANCE || inputs.enable_governance || 'false' }}
 
 permissions:
   contents: write
@@ -29,6 +47,7 @@ jobs:
       - name: Generate leaderboard
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          ENABLE_GOVERNANCE: ${{ env.ENABLE_GOVERNANCE }}
         run: python .github/scripts/leaderboard.py
 
       - name: Commit leaderboard artifacts
@@ -45,6 +64,7 @@ jobs:
 
       - name: Prepare inactive report
         id: inactive
+        if: env.ENABLE_GOVERNANCE == 'true'
         run: |
           python - <<'PY'
           import json
@@ -88,7 +108,7 @@ jobs:
           PY
 
       - name: Open inactive contributor issue
-        if: steps.inactive.outputs.inactive_count != '0'
+        if: env.ENABLE_GOVERNANCE == 'true' && steps.inactive.outputs.inactive_count != '0'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
