@@ -18,4 +18,8 @@ jobs:
       - name: Check stale / unreviewed docs and open issues
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Cap issue creation per run to avoid a "first run" flood.
+          # Set MAX_ISSUES=0 for unlimited.
+          MAX_ISSUES: 20
+          GRACE_DAYS: 7
         run: bash .github/scripts/check_freshness.sh

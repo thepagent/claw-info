@@ -5,10 +5,14 @@ set -euo pipefail
 # - Opens doc-review issues when docs/usecases exceed thresholds.
 # - ALSO opens issues for missing last_validated (unreviewed) so docs don't slip through forever.
 # - Does NOT mutate repo files (no auto-stale frontmatter writes).
+#
+# Controls:
+# - MAX_ISSUES: cap number of issues created per run (0 = unlimited). Default: 20.
 
 REPO="${GITHUB_REPOSITORY:-thepagent/claw-info}"
 LABEL="doc-review"
-GRACE_DAYS="7"
+GRACE_DAYS="${GRACE_DAYS:-7}"
+MAX_ISSUES="${MAX_ISSUES:-20}"
 
 threshold_for() {
   case "$1" in
@@ -36,6 +40,13 @@ label_ok=0
 if ensure_label; then label_ok=1; fi
 
 TODAY_EPOCH="$(date +%s)"
+CREATED_ISSUES=0
+
+reached_cap() {
+  # MAX_ISSUES=0 means unlimited
+  [[ "$MAX_ISSUES" == "0" ]] && return 1
+  (( CREATED_ISSUES >= MAX_ISSUES ))
+}
 
 create_issue() {
   local title="$1"
@@ -58,14 +69,19 @@ create_issue() {
     args+=("--label" "$LABEL")
   fi
 
+  local out=""
+
   if [[ -n "$assignee" ]]; then
     # Assignee can fail if user is not assignable; fall back gracefully.
-    if "${args[@]}" --assignee "$assignee" >/dev/null 2>&1; then
+    if out=$("${args[@]}" --assignee "$assignee" 2>/dev/null); then
+      CREATED_ISSUES=$((CREATED_ISSUES + 1))
       return 0
     fi
   fi
 
-  "${args[@]}" >/dev/null
+  if out=$("${args[@]}" 2>/dev/null); then
+    CREATED_ISSUES=$((CREATED_ISSUES + 1))
+  fi
 }
 
 scan_file() {
@@ -133,7 +149,28 @@ EOF
   fi
 }
 
-# Scan docs + usecases markdown
-find docs usecases -type f -name "*.md" -print0 | while IFS= read -r -d '' f; do
+# Scan docs + usecases markdown (skip missing dirs)
+DIRS=()
+[[ -d docs ]] && DIRS+=(docs)
+[[ -d usecases ]] && DIRS+=(usecases)
+
+if (( ${#DIRS[@]} == 0 )); then
+  echo "No docs/ or usecases/ directories found; skipping."
+  exit 0
+fi
+
+while IFS= read -r -d '' f; do
+  if reached_cap; then
+    echo "Reached MAX_ISSUES=${MAX_ISSUES}; stopping early."
+    break
+  fi
+
   scan_file "$f"
-done
+
+  if reached_cap; then
+    echo "Reached MAX_ISSUES=${MAX_ISSUES}; stopping early."
+    break
+  fi
+done < <(find "${DIRS[@]}" -type f -name "*.md" -print0)
+
+echo "Created issues this run: ${CREATED_ISSUES} (MAX_ISSUES=${MAX_ISSUES})"
