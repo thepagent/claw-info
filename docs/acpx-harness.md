@@ -237,6 +237,15 @@ openclaw status
 
 Gateway 正常啟動後，`plugins.entries.acpx` 會由 openclaw 自動寫入 config，無需手動設定。
 
+### 版本說明
+
+**v2026.3.23 已改善此問題的部分影響：**
+
+- **plugin 路徑不存在改為 warning**：3.23 將未知 `plugins.load.paths` 路徑從致命錯誤改為警告，不再阻擋 openclaw 啟動。升級至 3.23 後，即使 config 未清理，gateway 仍可啟動（但 acpx 相關功能可能降級）。
+- **打包流程修復**：3.23 同時修復了 3.22 的 npm 打包缺失問題，並加入 release check，確保後續版本發佈時 bundled artifacts 不會再遺漏。
+
+若你已升級至 v2026.3.23 或更新版本，建議仍執行上述手動清理步驟以確保 config 乾淨，避免殘留的過時設定在未來升級時產生混淆。
+
 ### 外部 CLI 作為修復工具（Gateway 完全失效時的 workaround）
 
 若 `openclaw` 所有指令均失效，可直接啟動已安裝的外部 ACP CLI（kiro、claude、codex 任一），將上述錯誤訊息告知它，讓它自動診斷並修改 `~/.openclaw/openclaw.json`。
