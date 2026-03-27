@@ -7,12 +7,12 @@ set -euo pipefail
 # - Does NOT mutate repo files (no auto-stale frontmatter writes).
 #
 # Controls:
-# - MAX_ISSUES: cap number of issues created per run (0 = unlimited). Default: 20.
+# - MAX_ISSUES: cap number of issues created per run (0 = unlimited). Default: 50.
 
 REPO="${GITHUB_REPOSITORY:-thepagent/claw-info}"
 LABEL="doc-review"
 GRACE_DAYS="${GRACE_DAYS:-7}"
-MAX_ISSUES="${MAX_ISSUES:-20}"
+MAX_ISSUES="${MAX_ISSUES:-50}"
 
 threshold_for() {
   case "$1" in
