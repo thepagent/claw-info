@@ -213,13 +213,19 @@ openclaw cron add \
   --tz "Asia/Shanghai" \
   --session isolated \
   --no-deliver \
-  --timeout-seconds 120 \
+  --timeout-seconds 3700 \
   --message "你是一個記憶清理確認 agent。執行：
 1. 讀取 ~/.openclaw/workspace/MEMORY.pending-cleanup.md
 2. 若不存在或為空 → 靜默結束
-3. 若有內容 → 用 openfeedback send 批量列出所有待清理條目，請主人確認。標題：「MEMORY 清理確認」，timeout 3600
-4. 若 approved → 從 MEMORY.md 刪除對應條目，清空 pending-cleanup 文件
-5. 若 rejected + 理由 → 根據理由調整，清空 pending-cleanup 文件"
+3. 若有內容 → 用 openfeedback send 批量列出所有待清理條目，請 owner 確認。標題：「MEMORY 清理確認」，timeout 3600
+4. 若 approved → 從 MEMORY.md 刪除對應條目，刪除 pending-cleanup 文件
+5. 若 rejected + 理由 →
+   openfeedback 的 reject 回應包含可操作的文字理由（如「第2條保留，其餘刪除」）。
+   解讀理由，按條精確執行（刪指定條、保留其餘條），執行完畢後清空 pending-cleanup 文件。
+   若理由模糊無法判斷 → 保留文件，在開頭插入一行：
+   [上次確認：YYYY-MM-DD rejected，理由：<原文>，待人工處理]
+   靜默結束，明天重新推送。
+6. timeout / 任務失敗 → 文件保留，明天重新推送"
 ```
 
 ---
@@ -266,6 +272,20 @@ openclaw cron add \
 | 其他 agent（如飛書） | `~/.openclaw/workspace-<agent-id>/` | 各自獨立 |
 
 共用一套 job 無法跨 agent 抓取 session，會導致其他 agent 的對話記錄被遺漏。
+
+---
+
+## Rerun & Retry Semantics
+
+Default behavior when jobs are re-run or retried:
+
+| Job | Rerun behavior | Notes |
+|-----|----------------|-------|
+| Log Job | append-only, not idempotent | Designed to run once per day. A rerun appends a new `[auto-generated]` block to the same day's log — redundant but harmless; Dream Job processes it correctly |
+| Dream Job | same-day backup is overwritten; MEMORY.md updates are idempotent | One pre-dream snapshot per day is sufficient for recovery. Same-day overwrite is intentional |
+| Confirm Job | reject executes per-item based on reason; falls back to preserving the file if reason is ambiguous | No all-or-nothing clearing; cleanup always requires owner confirmation |
+
+Design principle: prefer redundancy over data loss; all deletions require human confirmation.
 
 ---
 
