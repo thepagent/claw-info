@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-02
+---
+
 # Sample Models & Agents Config
 
 Minimal shareable snippet for openclaw `openclaw.json`.

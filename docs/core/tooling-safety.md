@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-02
+---
+
 # Tooling 合約與安全邊界（Tooling contract & safety boundaries）
 
 > Status: Draft → **內容已填充（待 review）**。本頁用來定義 OpenClaw Agent 在使用工具（tools）時的「信任邊界」與「安全合約」，避免模型幻覺、prompt injection、或工具濫用造成不可逆的損害。

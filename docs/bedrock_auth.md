@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-02
+---
+
 # Amazon Bedrock Authentication for OpenClaw
 
 Two ways to authenticate with Amazon Bedrock.

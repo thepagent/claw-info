@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-02
+---
+
 # 同一 Provider 的 Auth Profiles 輪換（Rotation / Failover）
 
 本文件說明：當你在 OpenClaw 針對**同一個 model provider**（例如 `openai-codex`、`anthropic`、`google`）配置了**多個 auth profiles** 時，OpenClaw 在執行時如何選擇、固定、以及在失敗時如何輪換到下一個 profile。

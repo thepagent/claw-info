@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-02
+---
+
 # OpenClaw 外部 Secrets 管理
 
 > 引入版本：v2026.2.26 ([#26155](https://github.com/openclaw/openclaw/pull/26155))

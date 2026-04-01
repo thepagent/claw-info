@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-02
+---
+
 # Start / Onboarding（最小可行）
 
 > 目標：讓你在 **15–30 分鐘內**把 OpenClaw 跑起來（daemon 常駐、能收訊息、能跑工具）。

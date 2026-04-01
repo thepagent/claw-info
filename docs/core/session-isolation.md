@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-02
+---
+
 # Session model 與隔離（main vs isolated vs cron）
 
 > 本文是 OpenClaw 的核心概念深度解析：**什麼是 session**、為何需要隔離、以及你應該在「主會話（main）／隔離會話（isolated）／定時任務（cron）」之間如何做選擇。

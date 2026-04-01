@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-02
+---
+
 # Amazon Bedrock Models Configuration for OpenClaw
 
 This document provides a reference configuration for using Amazon Bedrock models with OpenClaw.

@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-02
+---
+
 # OpenClaw Webhooks（Webhook 回呼）
 
 OpenClaw 支援在特定工作完成後，將結果以 **HTTP webhook** 形式投遞到外部系統。

@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-02
+---
+
 # Troubleshooting（常見故障排除）
 
 > 這份文件假設你「已經跑起來一次」，但開始遇到：不回覆、收不到訊息、browser 接不上、cron 不跑、SSO 過期…

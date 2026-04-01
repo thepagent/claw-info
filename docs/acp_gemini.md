@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-02
+---
+
 # OpenClaw × ACP × Gemini 整合指南
 
 讓你的 OpenClaw agent 透過 ACP 轉接 Google Gemini CLI，實現對話持久化。

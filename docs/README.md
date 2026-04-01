@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-02
+---
+
 # OpenClaw 文件索引（docs/）
 
 本目錄收錄 `claw-info` 專案中與 OpenClaw 使用、部署與核心概念相關的文件。

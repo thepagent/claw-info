@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-02
+---
+
 # OpenClaw Cron 調度系統
 
 ## 概述

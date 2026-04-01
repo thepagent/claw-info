@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-02
+---
+
 # iOS 架構文件
 
 ## TL;DR

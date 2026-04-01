@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-02
+---
+
 # OpenClaw × ACP × Codex 整合指南
 
 讓你的 OpenClaw agent 透過 ACP 轉接 OpenAI Codex，實現對話持久化。

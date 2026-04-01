@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-02
+---
+
 # SKILL.md Frontmatter 欄位說明
 
 OpenClaw 讀取每個 `SKILL.md` 的 frontmatter，將 skill 註冊為 Telegram/Discord slash command。

@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-02
+---
+
 # Amazon Bedrock 模型定價比較
 
 ```

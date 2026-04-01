@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-02
+---
+
 # 訊息路由與 Channel Plugins（Messaging routing & channel plugins）
 
 > 本文說明 OpenClaw 在「收到訊息 → 路由到 session/agent → 產生回覆 → 送回原平台」這條鏈路上，實際是如何運作的。

@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-02
+---
+
 # AWS SSO Token 刷新策略
 
 在運行 OpenClaw 機器時，AWS 憑證建議使用 AWS Identity Center（SSO）搭配 `aws sso login` 取得暫時性憑證。這些憑證數小時後到期，因此需要一套刷新策略來將停機時間降到最低。
