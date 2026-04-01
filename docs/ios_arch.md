@@ -722,8 +722,8 @@ openclaw invoke device.info
 
 | Issue | 標題 | 說明 |
 |-------|------|------|
-| [#14425](https://github.com/openclaw/openclaw/issues/14425) | iOS app crashes when receiving camera.snap command | iOS app 收到 camera.snap 命令時崩潰 |
-| [#6767](https://github.com/openclaw/openclaw/issues/6767) | iOS chat broken — node role unauthorized | Node role 未授權導致訊息消失 |
+| ~~[#14425](https://github.com/openclaw/openclaw/issues/14425)~~ | ~~iOS app crashes when receiving camera.snap command~~ | ✅ 已修復 |
+| ~~[#6767](https://github.com/openclaw/openclaw/issues/6767)~~ | ~~iOS chat broken — node role unauthorized~~ | ✅ 已修復 |
 
 ### 🟡 潛在改進（來自 PR #20054 Review）
 
