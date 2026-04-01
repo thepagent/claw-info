@@ -1,21 +1,32 @@
-# Exec 權限策略：A 保守型 / B 便利型 / C 混合型
+# OpenClaw Exec 權限策略模式
 
 ## 為什麼需要這篇
 
-在 OpenClaw 中，很多人看到：
+自 **OpenClaw `2026.4.1`** 起，`exec` 的 approval / allowlist 行為被更一致地落實，相關 release notes 也明確提到多項 **Exec/approvals** 修正。這讓使用者能更清楚地依照實際 policy 來控制 agent 的執行能力，而不是依賴較模糊或偶然的舊行為。
+
+換句話說，OpenClaw 讓使用者可以更明確地：
+
+- 用 `exec-approvals.json` 管理可執行命令的 trust / allowlist
+- 將 approval 與 ask policy 套用到不同風險層級的操作
+- 區分 host / sandbox / node 等不同執行邊界
+- 針對 chat-facing main agent、ACP、sub-agent 採取不同權限模型
+
+這是好事，但也讓很多人第一次更明顯地意識到：
 
 - `tools.exec.security = "full"`
 
-就會直覺以為 agent 幾乎什麼都能執行。
+**不等於**「agent 幾乎什麼都能執行」。
 
-但實際上，是否真的跑得動，還取決於：
+實際上，是否真的跑得動，還取決於：
 
 - `exec-approvals.json` 中已存在的 allowlist / durable trust
 - approval / ask policy
 - host / sandbox / node 的執行位置
 - 當前 session 或 agent 的有效工具策略
 
-在較新的版本（例如 `2026.4.1`）中，`exec` approval / allowlist 的行為更一致，這種差異也就更容易被看見。常見症狀就是：
+因此，自 `2026.4.1` 之後，更需要一份實務導向的指引，幫助使用者設計自己的 exec 權限模型，而不是只看單一設定欄位來猜測系統行為。
+
+常見症狀就是：
 
 - `exec denied: allowlist miss`
 
