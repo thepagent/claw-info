@@ -40,7 +40,7 @@
   - [`howto/agent-browser-agentcore.md`](./howto/agent-browser-agentcore.md) — Build agent-browser（PR #397）並連線 AWS Bedrock AgentCore Browser
   - [`howto/aws-iam-minimal-botbedrockrole.md`](./howto/aws-iam-minimal-botbedrockrole.md) — OpenClaw AWS IAM 最小權限配置（BotBedrockRole）
   - [`howto/gws-cli-scoped-auth.md`](./howto/gws-cli-scoped-auth.md) — Google Workspace CLI (`gws`) 授權範圍控制與資料夾級權限限制
-  - [`howto/exec-strategy-patterns.md`](./howto/exec-strategy-patterns.md) — OpenClaw `exec` 權限策略：A 保守型 / B 便利型 / C 混合型
+  - [`howto/exec-strategy-patterns.md`](./howto/exec-strategy-patterns.md) — OpenClaw Exec 權限策略模式
   - [`howto/skills-extradirs-symlink.md`](./howto/skills-extradirs-symlink.md) — Skills 外部 repo 若透過 symlink 載入失敗，改用 `skills.load.extraDirs` 的設定方式
 
 - **運維**
