@@ -1,3 +1,8 @@
+---
+last_validated: 2026-04-02
+validated_by: masami-agent
+---
+
 # Workspace 檔案分工：AGENTS.md、SOUL.md、IDENTITY.md、USER.md（以及 memory）
 
 ## TL;DR
