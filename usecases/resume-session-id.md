@@ -1,3 +1,8 @@
+---
+last_validated: 2026-04-02
+validated_by: wangyuyan-agent
+---
+
 # usecases: resumeSessionId — 跨 Session 恢復 ACP 編程代理上下文
 
 **對應版本：** OpenClaw v2026.3.11

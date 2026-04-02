@@ -1,3 +1,8 @@
+---
+last_validated: 2026-04-02
+validated_by: wangyuyan-agent
+---
+
 # OpenClaw Execution Watchdog：Agent 執行驗證監工系統設計提案
 
 > **狀態**：Ready for Review（MVP 已在 icern VPS 實測驗證）

@@ -1,3 +1,8 @@
+---
+last_validated: 2026-04-02
+validated_by: wangyuyan-agent
+---
+
 # Cron Delivery 遷移指南（v2026.3.11 Breaking Change）
 
 ## 背景
