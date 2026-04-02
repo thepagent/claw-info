@@ -120,7 +120,8 @@ metadata:
 import { execSync } from "child_process";
 
 const ACPX = "/home/<user>/.npm-global/lib/node_modules/openclaw/extensions/acpx/node_modules/.bin/acpx";
-const AGENT = "gemini --experimental-acp";
+const AGENT = "gemini --acp"; // Gemini CLI 0.33.x+
+// 注意：環境變數需包含 GEMINI_MODEL=gemini-3-flash-preview 以避免 capacity 報錯
 const SESSION = "my-gemini-tg";
 const BOT_TOKEN = "<YOUR_BOT_TOKEN>";
 
@@ -223,4 +224,6 @@ $ACPX --agent "gemini --experimental-acp" sessions new --name my-gemini-tg
 
 - [OpenClaw × ACP × Kiro 整合指南](./acp_kiro.md)
 - [OpenClaw × ACP × Codex 整合指南](./acp_codex.md)
+- [ACPX Harness 架構與演進史](../acpx-harness.md)
+nClaw × ACP × Codex 整合指南](./acp_codex.md)
 - [ACPX Harness 架構與演進史](../acpx-harness.md)
