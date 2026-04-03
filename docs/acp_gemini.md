@@ -1,10 +1,23 @@
 ---
-last_validated: 2026-04-02
+last_validated: 2026-04-03
 ---
 
 # OpenClaw × ACP × Gemini 整合指南
 
 讓你的 OpenClaw agent 透過 ACP 轉接 Google Gemini CLI，實現對話持久化。
+
+---
+
+## 重要更新 (2026.04)
+
+### 1. Flag 變更
+- **Gemini CLI 0.33.0+**：正式使用 `--acp`。
+- **舊版 (0.31.x - 0.32.x)**：需使用 `--experimental-acp`。
+- 本指南預設以 **0.33.x+** 為準。
+
+### 2. Model Capacity 與 CWD
+- **Capacity**：預設的 `gemini-3.1-pro-preview` 經常額度不足，建議設定 `GEMINI_MODEL=gemini-3-flash-preview`。
+- **效能**：`cwd` 若設為 `~` 等大目錄會導致初始化極慢，建議固定在專案根目錄或 `/tmp`。
 
 ---
 
@@ -17,8 +30,8 @@ last_validated: 2026-04-02
 │ 用戶訊息 │     │  ① my-gemini-relay-hook hook                 │
 │          │     │     │  (message_received)                   │
 └──────────┘     │     │                                       │
-     ▲           │     │  acpx --agent "gemini --experimental- │
-     │           │     │  acp" prompt -s my-gemini-tg -f - (stdin)│
+     ▲           │     │  acpx --agent "gemini --acp" prompt   │
+     │           │     │  -s my-gemini-tg -f - (stdin)         │
      │           │     ▼                                       │
      │           │  ┌──────────────────────┐                  │
      │           │  │  Gemini ACP session  │                  │
@@ -39,22 +52,22 @@ last_validated: 2026-04-02
 
 | 項目 | kiro | codex | gemini |
 |------|------|-------|--------|
-| acpx 指令 | `acpx kiro prompt` | `acpx codex prompt` | `acpx --agent "gemini --experimental-acp" prompt` |
-| 輸出格式 | 純文字 | JSON（需 `--format json` + python3） | 純文字（含 `[client]` 前綴行，filter 掉即可） |
-| acpx patch 需要？ | ✅ 是 | ❌ 否 | ❌ 否 |
+| acpx 指令 | `acpx kiro prompt` | `acpx codex prompt` | `acpx --agent "gemini --acp" prompt` |
+| 輸出格式 | 純文字 | JSON | 純文字 |
 
-> **關鍵**：acpx registry 內建的 `gemini` 指令沒有帶 `--experimental-acp`，直接用 `acpx gemini` 會掛住。需改用 `acpx --agent "gemini --experimental-acp"` 繞過 registry。
+> **關鍵**：Gemini CLI 0.33.x 已將 `--experimental-acp` 改為 `--acp`。若你使用的版本低於 0.33.0，請改回舊 flag。
 
 ---
 
 ## 前置需求
 
 - OpenClaw 已安裝並運行（`openclaw status`）
-- `gemini` CLI 已安裝並授權（`gemini --version`，需 0.31.0+）
+- `gemini` CLI 已安裝（`gemini --version`，建議 0.33.0+）
 - acpx extension 已啟用（`openclaw doctor --fix`）
 - 一個 Telegram bot token（從 @BotFather 取得）
 
 ```bash
+# 建議更新至最新版以支援 --acp flag
 npm install -g @google/gemini-cli@latest
 ```
 
@@ -202,9 +215,11 @@ journalctl --user -u openclaw-gateway.service --since "5 min ago" --no-pager | t
 
 ### Gemini session 壞掉
 ```bash
+# 根據版本選擇 --acp 或 --experimental-acp
+AGENT_FLAG="--acp"
 ACPX=$(find ~/.npm-global -path "*/extensions/acpx/node_modules/.bin/acpx" | head -1)
-cd $HOME && $ACPX --agent "gemini --experimental-acp" sessions close my-gemini-tg 2>/dev/null
-$ACPX --agent "gemini --experimental-acp" sessions new --name my-gemini-tg
+cd $HOME && $ACPX --agent "gemini ${AGENT_FLAG}" sessions close my-gemini-tg 2>/dev/null
+$ACPX --agent "gemini ${AGENT_FLAG}" sessions new --name my-gemini-tg
 ```
 
 ---
@@ -224,6 +239,4 @@ $ACPX --agent "gemini --experimental-acp" sessions new --name my-gemini-tg
 
 - [OpenClaw × ACP × Kiro 整合指南](./acp_kiro.md)
 - [OpenClaw × ACP × Codex 整合指南](./acp_codex.md)
-- [ACPX Harness 架構與演進史](../acpx-harness.md)
-nClaw × ACP × Codex 整合指南](./acp_codex.md)
 - [ACPX Harness 架構與演進史](../acpx-harness.md)
