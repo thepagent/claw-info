@@ -223,4 +223,4 @@ $ACPX --agent "gemini --experimental-acp" sessions new --name my-gemini-tg
 
 - [OpenClaw × ACP × Kiro 整合指南](./acp_kiro.md)
 - [OpenClaw × ACP × Codex 整合指南](./acp_codex.md)
-- [ACPX Harness 架構與演進史](../acpx-harness.md)
+- [ACPX Harness 架構與演進史](./acpx-harness.md)
