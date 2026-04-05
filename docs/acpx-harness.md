@@ -11,6 +11,47 @@ ACPX（ACP eXternal）Harness 是 OpenClaw ACP（Agent Communication Protocol）
 
 ---
 
+## `openclaw acp` vs ACPX Harness（ACP Agents）
+
+OpenClaw 有兩個容易混淆的 ACP 概念：
+
+| | `openclaw acp` | ACPX Harness（ACP Agents） |
+|---|---|---|
+| 方向 | 外部 IDE/client → OpenClaw | OpenClaw → 外部 CLI |
+| 用途 | IDE 透過 ACP 連接 OpenClaw Gateway | OpenClaw 啟動 Codex/Claude/Gemini 執行任務 |
+| 指令 | `openclaw acp` | `/acp spawn`、binding `type: "acp"` |
+| 工具 | 無（純 bridge） | 外部 CLI 原生工具 |
+
+簡單記法：
+- **editor 想連 OpenClaw** → `openclaw acp`
+- **OpenClaw 想用外部 CLI** → ACPX Harness
+
+## CLI Backends（text-only fallback）
+
+OpenClaw 也支援 **CLI backends** 作為 API provider 掛掉時的 text-only 安全網：
+
+```json5
+{
+  agents: {
+    defaults: {
+      cliBackends: {
+        "claude-cli": { command: "/opt/homebrew/bin/claude" },
+        "codex-cli": { command: "/opt/homebrew/bin/codex" },
+      }
+    }
+  }
+}
+```
+
+- 工具完全停用（text in → text out）
+- 支援 session 和圖片傳遞
+- 不需要額外 API key（用 CLI 自身的認證）
+- 設計為安全網，非主要路徑
+
+> CLI backends ≠ ACP。若需要完整的 harness runtime（工具呼叫、thread binding、persistent session），用 ACPX Harness。
+
+---
+
 ## 它解決了什麼痛點
 
 ### 問題背景

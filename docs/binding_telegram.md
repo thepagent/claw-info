@@ -5,6 +5,34 @@ validated_by: thepagent
 
 # Telegram Binding 指南
 
+## DM 存取政策（dmPolicy）
+
+`channels.telegram.dmPolicy` 控制私訊存取模式（`2026.2.25+`）：
+
+| dmPolicy | 說明 |
+|----------|------|
+| `pairing`（預設） | 新使用者需透過 pairing code 配對後才能 DM |
+| `allowlist` | 僅允許 `allowFrom` 中列出的 numeric Telegram user ID |
+| `open` | 任何人都可以 DM（需 `allowFrom: ["*"]`） |
+| `disabled` | 完全關閉 DM |
+
+```json5
+{
+  channels: {
+    telegram: {
+      dmPolicy: "pairing",
+      allowFrom: [],  // numeric Telegram user IDs
+    }
+  }
+}
+```
+
+> ⚠️ **安全邊界（`2026.2.25+`）**：DM pairing 授權不會繼承到群組。Pairing 僅授予 DM 存取權。群組授權需透過 `groupAllowFrom` 或 per-group `allowFrom` 明確設定。
+>
+> 若希望「配對一次就能同時使用 DM 和群組」，請將你的 numeric Telegram user ID 加入 `channels.telegram.allowFrom`。
+
+---
+
 openclaw 的 `bindings` 設定支援兩種 Telegram 綁定模式：
 
 | 模式 | 說明 | `match` 欄位 |

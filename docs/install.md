@@ -14,8 +14,8 @@ validated_by: thepagent
 ## TL;DR
 
 ```bash
-# 1) 安裝 Node.js（建議用 nvm 或 Volta 管）
-node -v
+# 1) 安裝 Node.js 24（建議用 nvm 或 Volta 管）
+node -v   # 需 v22.14+ 或 v24+
 npm -v
 
 # 2) 安裝 OpenClaw CLI
@@ -32,9 +32,11 @@ openclaw gateway status
 
 ## 1) 先決條件
 
-- Node.js LTS（建議 >= 20）
+- **Node.js 22.14+**（必要），**Node 24 推薦**（安裝腳本、CI、release workflow 的預設版本）
 - npm
 - 可連外下載套件（公司網路可能要 proxy）
+
+> ⚠️ Node 20 已不再支援。若 `node -v` 顯示 v20 或更舊，請先升級。
 
 ### 建議：不要用系統自帶 node
 
@@ -58,8 +60,8 @@ brew install node
 
 ```bash
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-nvm install --lts
-nvm use --lts
+nvm install 24
+nvm use 24
 ```
 
 ### 2.2 安裝 OpenClaw

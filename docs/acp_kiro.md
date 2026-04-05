@@ -253,4 +253,36 @@ openclaw hooks list  # 確認 ✓ ready
 
 - [OpenClaw × ACP × Codex 整合指南](./acp_codex.md)
 - [OpenClaw × ACP × Gemini 整合指南](./acp_gemini.md)
-- [ACPX Harness 架構與演進史](../acpx-harness.md)
+- [ACPX Harness 架構與演進史](./acpx-harness.md)
+
+---
+
+## 補充：`openclaw acp` vs ACP Agents（ACPX Harness）
+
+本指南描述的是 **ACP Agents** 路線（OpenClaw → 啟動 Kiro CLI 執行任務）。
+
+另一個容易混淆的概念是 `openclaw acp`，方向相反：
+
+| | `openclaw acp` | 本指南（ACP Agents） |
+|---|---|---|
+| 方向 | IDE → OpenClaw | OpenClaw → Kiro CLI |
+| 用途 | IDE 透過 ACP 連接 Gateway | OpenClaw 委派任務給 Kiro |
+| 工具 | 無（純 bridge） | Kiro 原生工具（file edit、bash 等） |
+
+## 補充：CLI Backends（text-only fallback）
+
+若只需要 text-only 的安全網（API 掛掉時的 fallback），不需要完整 ACP harness，可用 CLI backends：
+
+```json5
+{
+  agents: {
+    defaults: {
+      cliBackends: {
+        "kiro-cli": { command: "/opt/homebrew/bin/kiro-cli" }
+      }
+    }
+  }
+}
+```
+
+CLI backends 停用所有工具，僅做 text in → text out，適合作為 provider 故障時的降級方案。詳見 [ACPX Harness](./acpx-harness.md#cli-backends)。

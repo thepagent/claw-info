@@ -38,58 +38,99 @@ openclaw onboard --install-daemon
 
 ---
 
-## 3) Sessions / Subagents
+## 3) Sessions / Agents
 
-（以下命令視你的版本可能略有差異；以實際 help 為準）
-
-- 列出 sessions
-- 查某個 session 歷史
-- 對某個 session 發訊息
-
-> 在 chat 介面中，多數情境你會直接用 agent 的內建工具 `sessions_list / sessions_history / sessions_send`。
-
----
-
-## 4) Cron（排程）
-
-> 你也可以直接在 chat 用 `cron` tool 建立/管理。
-
-概念：
-- list：看有哪些 job
-- add：新增 job
-- run：立即觸發
-- runs：看執行紀錄
+```bash
+openclaw sessions list
+openclaw sessions history <sessionKey>
+openclaw agent --message "hi"
+openclaw agents list
+```
 
 ---
 
-## 5) Nodes
+## 4) ACP / MCP
+
+```bash
+openclaw acp                    # 啟動 ACP bridge（IDE 連 OpenClaw）
+openclaw mcp serve              # 啟動 MCP server（外部 MCP client 連 OpenClaw）
+```
+
+> `openclaw acp` 是 Gateway-backed ACP bridge，不是 ACP harness。
+> 若要讓 OpenClaw 啟動外部 CLI（Codex/Claude/Gemini），用 ACP Agents（`/acp spawn`）。
+
+---
+
+## 5) Cron / Flows / Tasks
+
+```bash
+openclaw cron list
+openclaw cron add
+openclaw cron run <jobId>
+openclaw cron runs
+openclaw flows list             # ClawFlow 工作流
+openclaw tasks list             # 任務管理
+```
+
+---
+
+## 6) Nodes / Devices
 
 ```bash
 openclaw nodes status
+openclaw nodes describe --node <id>
+openclaw devices list
+openclaw devices approve <requestId>
 ```
 
 （配對流程與能力請看 `docs/nodes.md`）
 
 ---
 
-## 6) 常用除錯
+## 7) 管理工具
 
 ```bash
-openclaw status
-openclaw gateway status
+openclaw doctor                 # 診斷 + 修復
+openclaw dashboard              # Web dashboard
+openclaw backup                 # 備份設定
+openclaw models list            # 模型清單
+openclaw memory search <query>  # 記憶搜尋
+openclaw plugins list           # 插件管理
+openclaw secrets list           # Secrets 管理
+openclaw skills list            # Skills 管理
+openclaw pairing list           # 配對管理
+openclaw channels list          # Channel 管理
+openclaw approvals list         # 審批管理
+openclaw sandbox status         # Sandbox 狀態
+openclaw browser                # 瀏覽器工具
+openclaw hooks list             # Hook 管理
+openclaw webhooks list          # Webhook 管理
+openclaw logs                   # 查看日誌
+openclaw system info            # 系統資訊
 ```
 
 ---
 
-## 7) 常見工作流（例）
+## 8) 常用除錯
 
-### 7.1 「我想確認 bot 還活著」
+```bash
+openclaw status
+openclaw health
+openclaw gateway status
+openclaw doctor --fix
+```
+
+---
+
+## 9) 常見工作流（例）
+
+### 9.1 「我想確認 bot 還活著」
 
 ```bash
 openclaw gateway status
 ```
 
-### 7.2 「我想重啟所有東西」
+### 9.2 「我想重啟所有東西」
 
 ```bash
 openclaw gateway restart
