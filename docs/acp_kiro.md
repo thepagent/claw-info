@@ -1,3 +1,8 @@
+---
+last_validated: 2026-04-05
+validated_by: thepagent
+---
+
 # OpenClaw × ACP × Kiro 整合指南
 
 讓你的 OpenClaw 透過 ACP 轉接 Kiro，實現對話持久化。

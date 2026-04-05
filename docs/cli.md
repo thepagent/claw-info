@@ -1,3 +1,8 @@
+---
+last_validated: 2026-04-05
+validated_by: thepagent
+---
+
 # CLI Quick Reference（指令速查）
 
 > 目標：把最常用的 OpenClaw 指令整理成「抄得到就能用」的速查表。

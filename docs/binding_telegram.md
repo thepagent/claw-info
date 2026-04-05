@@ -1,3 +1,8 @@
+---
+last_validated: 2026-04-05
+validated_by: thepagent
+---
+
 # Telegram Binding 指南
 
 openclaw 的 `bindings` 設定支援兩種 Telegram 綁定模式：

@@ -1,3 +1,8 @@
+---
+last_validated: 2026-04-05
+validated_by: thepagent
+---
+
 # OpenClaw 自動更新流程
 
 使用 openclaw cron、Telegram 與 kiro-cli 實現自動版本檢查與更新。

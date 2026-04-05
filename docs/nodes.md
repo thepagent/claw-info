@@ -1,3 +1,8 @@
+---
+last_validated: 2026-04-05
+validated_by: thepagent
+---
+
 # OpenClaw Nodes 深度解析
 
 ## 概述

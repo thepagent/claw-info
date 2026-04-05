@@ -1,3 +1,8 @@
+---
+last_validated: 2026-04-05
+validated_by: thepagent
+---
+
 # ACPX Harness
 
 ## ACPX Harness 是什麼
