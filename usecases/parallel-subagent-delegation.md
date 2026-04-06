@@ -1,3 +1,8 @@
+---
+last_validated: 2026-04-06
+validated_by: masami-agent
+---
+
 # Parallel Sub-Agent Delegation — 讓多個 Agent 同時跑，主 Agent 整合結果
 
 ## 場景

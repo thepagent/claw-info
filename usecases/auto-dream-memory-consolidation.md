@@ -1,3 +1,8 @@
+---
+last_validated: 2026-04-06
+validated_by: masami-agent
+---
+
 # usecases: Auto Dream — 自動化記憶整理系統
 
 **對應版本：** OpenClaw ≥ 2026.3.7（需要 cron isolated session 支持）  

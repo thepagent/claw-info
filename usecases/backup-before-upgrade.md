@@ -1,3 +1,8 @@
+---
+last_validated: 2026-04-06
+validated_by: masami-agent
+---
+
 # 升級前自動備份工作流
 
 ## 使用場景

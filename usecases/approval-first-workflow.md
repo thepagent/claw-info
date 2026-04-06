@@ -1,3 +1,8 @@
+---
+last_validated: 2026-04-06
+validated_by: masami-agent
+---
+
 # Approval-First Workflow — Human-in-the-Loop 審批閘門設計
 
 > 讓 agent 自主讀、分析、起草，但在任何改變狀態的操作前先取得人類許可。
