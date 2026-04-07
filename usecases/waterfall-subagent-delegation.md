@@ -1,3 +1,8 @@
+---
+last_validated: 2026-04-07
+validated_by: Chloe
+---
+
 # Waterfall Sub-Agent Delegation — 串接式任務委派（Task 依賴前一個結果）
 
 ## TL;DR

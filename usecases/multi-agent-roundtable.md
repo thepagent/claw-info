@@ -1,3 +1,8 @@
+---
+last_validated: 2026-04-07
+validated_by: Chloe
+---
+
 # Multi-Agent Roundtable 實戰：從多觀點到可執行決策
 
 > 把「多 Agent 討論」落地成標準流程的實作指南。四段式協議、角色設計、OpenClaw 編排方式，以及一次真實執行紀錄。

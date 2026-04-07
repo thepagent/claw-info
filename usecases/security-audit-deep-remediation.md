@@ -1,3 +1,8 @@
+---
+last_validated: 2026-04-07
+validated_by: Chloe
+---
+
 # Security Audit --deep 實戰修復指南（skills quarantine、gateway password 移出 config）
 
 ## TL;DR
