@@ -1,5 +1,6 @@
 ---
 last_validated: 2026-04-02
+validated_by: masami-agent
 ---
 
 # Start / Onboarding（最小可行）

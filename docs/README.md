@@ -1,5 +1,6 @@
 ---
 last_validated: 2026-04-02
+validated_by: masami-agent
 ---
 
 # OpenClaw 文件索引（docs/）
