@@ -1,3 +1,8 @@
+---
+last_validated: 2026-04-09
+validated_by: masami-agent
+---
+
 # OpenClaw Nodes 深度解析
 
 ## 概述

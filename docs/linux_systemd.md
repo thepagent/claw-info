@@ -1,3 +1,8 @@
+---
+last_validated: 2026-04-09
+validated_by: masami-agent
+---
+
 # Linux（systemd）上的 OpenClaw Gateway：重啟、Port 衝突與 Model 設定踩坑
 
 ## TL;DR

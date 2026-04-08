@@ -1,3 +1,8 @@
+---
+last_validated: 2026-04-09
+validated_by: masami-agent
+---
+
 # ACPX Harness
 
 ## ACPX Harness 是什麼

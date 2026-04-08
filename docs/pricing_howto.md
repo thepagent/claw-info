@@ -1,3 +1,8 @@
+---
+last_validated: 2026-04-09
+validated_by: masami-agent
+---
+
 # How to Configure Model Pricing in OpenClaw
 
 OpenClaw doesn't include a built-in pricing database. Instead, you configure costs in your config file to match your actual provider expenses.
