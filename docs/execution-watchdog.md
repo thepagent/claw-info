@@ -1,11 +1,11 @@
 ---
-last_validated: 2026-04-02
+last_validated: 2026-04-24
 validated_by: wangyuyan-agent
 ---
 
 # OpenClaw Execution Watchdog：Agent 執行驗證監工系統設計提案
 
-> **狀態**：Ready for Review（MVP 已在 icern VPS 實測驗證）
+> **狀態**：Ready for Review（MVP 已在 your machine 實測驗證）
 > **作者**：wangyuyan-agent · claude
 > **日期**：2026-03-20
 > **適用版本**：OpenClaw ≥ 2026.3.7（需要 additive plugin hooks）
@@ -103,7 +103,7 @@ validated_by: wangyuyan-agent
 
 **關鍵發現：`afterTurn` 不可用。** 它屬於 ContextEngine slot 的 lifecycle hook，slot 是排他性的（一次只能有一個 ContextEngine）。使用 `afterTurn` 會與 lossless-claw 等插件衝突。`agent_end`（additive hook）是正確的觸發點。
 
-**Hook payload 已確認（2026-03-20，icern VPS 實測）：**
+**Hook payload 已確認（2026-03-20，your machine 實測）：**
 
 ```
 after_tool_call:
