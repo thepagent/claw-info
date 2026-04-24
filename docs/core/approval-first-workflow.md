@@ -1,3 +1,8 @@
+---
+last_validated: 2026-04-02
+validated_by: masami-agent
+---
+
 # Approval-first 工作流（個人 OpenClaw Agent）
 
 ## TL;DR
