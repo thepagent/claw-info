@@ -8,6 +8,7 @@ validated_by: masami-agent
 本目錄收錄 `claw-info` 專案中與 OpenClaw 使用、部署與核心概念相關的文件。
 
 - 寫作規約：[`STYLE_GUIDE.md`](./STYLE_GUIDE.md)
+- Frontmatter 規範：[`document-frontmatter.md`](./document-frontmatter.md)
 
 ## Start here
 

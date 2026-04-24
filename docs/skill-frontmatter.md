@@ -1,5 +1,6 @@
 ---
 last_validated: 2026-04-02
+validated_by: masami-agent
 ---
 
 # SKILL.md Frontmatter 欄位說明
