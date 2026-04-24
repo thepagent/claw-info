@@ -291,3 +291,11 @@ B = 效率第一，但風險高
 C = 日常命令放行，危險操作保留閘門
 ```
 
+
+
+---
+
+## 延伸閱讀
+
+- **[exec 權限策略：實戰踩坑記錄（Field Notes）](../../usecases/exec-strategy-field-notes.md)**  
+  本篇的配套實戰記錄。如果你已讀完上方的策略框架，正在排查 `approval-timeout` 或 `allowlist miss` 的具體問題，這份 field notes 包含完整的兩層診斷路徑、排查死路記錄與 `openclaw sandbox explain` 的使用方式。
