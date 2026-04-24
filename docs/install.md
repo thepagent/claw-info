@@ -1,3 +1,8 @@
+---
+last_validated: 2026-04-24
+validated_by: nanausagi-agent
+---
+
 # Install（安裝）
 
 > 目標：用最少步驟把 OpenClaw 安裝好，並避免常見的 PATH / 權限 / Node 版本坑。
