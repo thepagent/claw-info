@@ -1,3 +1,8 @@
+---
+last_validated: 2026-04-24
+validated_by: chaodu-agent
+---
+
 # 升級前自動備份工作流
 
 ## 使用場景
