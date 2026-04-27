@@ -1,6 +1,6 @@
 ---
-last_validated: 2026-04-07
-validated_by: Chloe
+last_validated: 2026-04-27
+validated_by: nanausagi-agent
 ---
 
 # LCM Context Retrieval — 從壓縮記憶中精準撈回細節
@@ -95,8 +95,11 @@ sum_001 (頂層摘要："討論了部署方案並決定用 Docker")
 
 回傳會包含匹配的摘要 ID（如 `sum_003`）和片段預覽。
 
-- `mode`: `"regex"` 用正規表達式，`"full_text"` 用全文搜尋
+- `mode`: `"regex"` 用正規表達式，`"full_text"` 用 FTS5 全文搜尋
 - `scope`: `"messages"` 只搜原始訊息，`"summaries"` 只搜摘要，`"both"` 全搜
+- `sort`: 預設 `"recency"` 適合找最近發生的事；找較舊主題時可用 `"relevance"` 或 `"hybrid"`
+
+> 💡 `full_text` 使用 FTS5 AND 語意：多加關鍵字會讓條件更嚴格，不會自動擴大搜尋。建議用 1–3 個有辨識度的詞，或用引號包住完整片語（例如 `"error handling"`）。
 
 **Step 2：展開**
 
@@ -121,25 +124,19 @@ sum_001 (頂層摘要："討論了部署方案並決定用 Docker")
 ```json
 {
   "tool": "lcm_expand_query",
-  "prompt": "之前設定的 nginx reverse proxy 監聽哪個 port？",
-  "query": "nginx proxy port"
+  "query": "nginx proxy",
+  "prompt": "之前設定的 nginx reverse proxy 監聽哪個 port？"
 }
 ```
 
 `lcm_expand_query` 會自動：
-1. 用 `query` 做 grep 搜尋
+1. 用 `query` 做候選摘要搜尋（同樣遵守 FTS5 AND 語意，保持短而精準）
 2. 展開匹配的摘要
 3. 用 sub-agent 根據 `prompt` 從展開內容中提取答案
 
 回傳的是整理過的答案，附帶引用的摘要 ID。
 
-> 💡 **參數版本提醒**：`tokenCap`、`maxDepth`、`conversationId` 等參數可能隨 OpenClaw 版本更迭而異。實作前可用以下方式自我校驗：
->
-> ```json
-> // 用 lcm_describe 確認當前 schema 支援的欄位
-> { "tool": "lcm_describe", "id": "sum_001" }
-> // 回傳的 metadata 中會列出可用欄位；若參數不存在，工具會回報錯誤而非靜默忽略
-> ```
+> 💡 **參數版本提醒**：`tokenCap`、`maxTokens`、`conversationId`、`allConversations` 等參數可能隨 OpenClaw 版本更迭而異。以當前工具 schema 為準；若參數不存在，工具會回報錯誤而非靜默忽略。
 
 ### 模式三：檢查特定摘要的結構 → describe
 
@@ -162,8 +159,8 @@ sum_001 (頂層摘要："討論了部署方案並決定用 Docker")
 {
   "tool": "lcm_grep",
   "pattern": "deployment strategy",
-  "allConversations": true,
-  "mode": "full_text"
+  "mode": "full_text",
+  "allConversations": true
 }
 ```
 
@@ -176,8 +173,8 @@ sum_001 (頂層摘要："討論了部署方案並決定用 Docker")
 ```json
 {
   "tool": "lcm_expand_query",
-  "prompt": "上次在 Telegram 討論的部署決定是什麼？",
   "query": "deploy",
+  "prompt": "上次在 Telegram 討論的部署決定是什麼？",
   "conversationId": 42
 }
 ```
@@ -226,6 +223,7 @@ lcm_expand(summaryIds=["sum_1204"], includeMessages=true)
 | 每次都 `allConversations: true` | 搜尋範圍太大，結果雜訊多 | 預設搜當前 session，確定不在才跨 session |
 | 直接 expand 頂層摘要 | 一次展開整棵樹，token 爆炸 | 先 grep 定位，只展開相關分支 |
 | 用 lcm_expand_query 做簡單關鍵字搜尋 | 殺雞用牛刀，多花一次 sub-agent 呼叫 | 簡單搜尋用 lcm_grep 就夠 |
+| 在 `full_text` query 塞太多同義詞 | FTS5 預設 AND 語意，結果反而變少 | 用 1–3 個辨識度高的詞，或改用精確片語 |
 | 忽略回傳的 sum_xxx ID | 下次又要重新搜尋 | 記下 ID，後續可直接 expand |
 
 ---
@@ -242,7 +240,7 @@ lcm_expand(summaryIds=["sum_1204"], includeMessages=true)
 
 - **症狀**：`lcm_expand_query` 回答不精確
   - **可能原因**：`query` 太模糊，grep 到不相關的摘要
-  - **處理方式**：讓 `query` 更具體（用確切術語），或改用 `summaryIds` 直接指定要展開的摘要
+  - **處理方式**：讓 `query` 更短且更具體（1–3 個確切術語），或改用 `summaryIds` 直接指定要展開的摘要
 
 ---
 
