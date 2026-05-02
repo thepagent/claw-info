@@ -1,6 +1,6 @@
 ---
-last_validated: 2026-04-07
-validated_by: Chloe
+last_validated: 2026-05-03
+validated_by: nanausagi-agent
 ---
 
 # Waterfall Sub-Agent Delegation — 串接式任務委派（Task 依賴前一個結果）
@@ -45,6 +45,8 @@ validated_by: Chloe
 ```text
 openclaw agent -m "任務指令" --channel <ch> --to <target> --deliver --timeout 300
 ```
+
+截至 2026-05-03，`openclaw agent --help` 仍列出 `--deliver`、`--reply-channel`、`--reply-to`、`--session-id`、`--timeout` 等參數；本文件的 CLI 型瀑布模式仍可用。
 
 這個指令是**同步**的——它會等 agent turn 完成才返回 exit code。這是串接的基礎：
 
@@ -152,6 +154,7 @@ Task 3 ──讀取──→ /tmp/task2-output.md
 | 把大量資料塞進 prompt 而非檔案 | prompt 有長度限制，且不如檔案可靠 |
 | 不設 timeout | 單步無限等待可能凍結整個瀑布 |
 | 中間步驟都通知使用者 | 使用者被中間過程轟炸，最終結果反而被淹沒 |
+| 在 Discord 需要 ACP thread/session 時手動 `message thread-create` | 容易繞過 ACP harness lifecycle；改用 `sessions_spawn(runtime="acp", thread=true, mode="session")` 作為 thread 建立入口 |
 
 ---
 
@@ -164,7 +167,7 @@ Task 3 ──讀取──→ /tmp/task2-output.md
 | 失敗處理 | `&&` 自動中斷後續 | 需要主 agent 整合時處理 |
 | 資料傳遞 | 檔案交接 | 各自獨立，主 agent 整合 |
 | 適用場景 | 研究→撰寫→發布 | 同時查多個來源 |
-| 實作工具 | `openclaw agent` + `&&` | `sessions_spawn` 多個 |
+| 實作工具 | `openclaw agent` + `&&`；ACP thread/session 場景用 `sessions_spawn` 串接 | `sessions_spawn` 多個 |
 
 **可以混合使用**：瀑布中的某一步可以包含平行子任務。
 
