@@ -1,11 +1,11 @@
 ---
-last_validated: 2026-04-07
-validated_by: Chloe
+last_validated: 2026-05-03
+validated_by: nanausagi-agent
 ---
 
 # Sub-Agent Orchestration：背景任務委派實戰指南
 
-> 讓 agent 派出分身處理耗時任務，自己繼續回應主人——不阻塞、不遺漏、不失控。
+> 讓 agent 派出分身處理耗時任務，自己繼續回應使用者——不阻塞、不遺漏、不失控。
 
 ---
 
@@ -44,7 +44,7 @@ validated_by: Chloe
 
 ## Spawn 模式比較
 
-OpenClaw 提供多種方式啟動背景任務：
+OpenClaw 提供多種方式啟動背景任務。2026-05-03 驗證重點：內建工具場景優先用 `sessions_spawn`；如果使用者明確說「用 Codex / Claude Code / Gemini」等 ACP harness，使用 `runtime: "acp"`，Discord thread 場景讓 `sessions_spawn(thread: true)` 建立與綁定 thread，不要另外手動 `message thread-create`。
 
 ### 1. `sessions_spawn`（推薦：ACP / Thread 場景）
 
@@ -53,15 +53,16 @@ OpenClaw 提供多種方式啟動背景任務：
 ```
 # 以下為 tool call 示意
 sessions_spawn(
-  runtime: "acp",
-  task: "在 /path/to/project 實作 feature X，完成後跑測試",
-  thread: true,        # 綁定 Discord thread
+  runtime: "acp",      # 使用 Codex / Claude Code / Gemini 等 ACP harness 時指定
+  task: "在專案目錄實作 feature X，完成後跑測試",
+  thread: true,        # Discord thread 場景：由 sessions_spawn 建立與綁定 thread
   mode: "session"      # 持久 session，可後續互動
 )
 ```
 
 **優點**：完成後自動回報、支援 thread 綁定、可追蹤
 **適用**：coding 任務、需要使用者後續追問的場景
+**注意**：原生 subagent 預設 isolated；只有子任務真的需要目前對話脈絡時，才使用 fork/context 共享。
 
 ### 2. `exec` + PTY（推薦：CLI 工具場景）
 
@@ -131,7 +132,7 @@ Sub-agent 完成後，如何讓主 agent 知道？有三種策略：
 完成後執行：openclaw system event --text "Done: [任務摘要]" --mode now
 ```
 
-這會觸發主 session 的 system event，agent 會在下次喚醒時看到。
+`openclaw system event --help` 目前支援 `--text`、`--mode now|next-heartbeat`、`--expect-final`、`--timeout` 等參數。這會觸發主 session 的 system event，agent 會在下次喚醒時看到。
 
 ### 策略 2：外部監控腳本
 
@@ -212,7 +213,7 @@ Agent 思考：
 2. 使用者在 Discord #程式開發 頻道 → 回報到同頻道
 
 Agent 執行：
-1. spawn sub-agent（timeout: 1800s, prompt 包含完成通知指令）
+1. sessions_spawn sub-agent（timeout: 1800s, prompt 包含完成通知指令）
 2. 啟動監控腳本（備援通知）
 3. 立即回覆使用者：
    「已派出分身處理登入功能實作，預估 15-20 分鐘。
@@ -296,6 +297,7 @@ subagents(action: "kill", target: "...")
 | Sub-agent 沒回報 | prompt 沒帶完成通知指令 | 加上 `openclaw system event` 指令 |
 | 任務中途停止 | timeout 太短 | 調高 timeout，最少 1200s |
 | 使用者等不到回應 | 用了 `process poll` 長等待 | 改用通知機制，不 poll |
+| Discord thread 建錯或 lifecycle 追不到 | 先手動 `message thread-create` 再派 ACP | 直接用 `sessions_spawn(runtime: "acp", thread: true, mode: "session")` |
 | 結果出現在錯頻道 | 沒指定回報頻道 | 在哪派就在哪報 |
 | Coding agent 改了設定檔 | 在 agent workspace 執行 | 只在專案目錄中 spawn |
 
