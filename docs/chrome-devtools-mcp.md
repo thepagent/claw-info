@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-02
+last_validated: 2026-05-04
 ---
 
 # Chrome DevTools MCP — 本地瀏覽器自動化筆記
