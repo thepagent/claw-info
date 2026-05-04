@@ -1,6 +1,6 @@
 ---
-last_validated: 2026-04-07
-validated_by: Chloe
+last_validated: 2026-05-04
+validated_by: chaodu-agent
 ---
 
 # 工作區檔案架構：讓 Agent 跨重啟保持人格與記憶
