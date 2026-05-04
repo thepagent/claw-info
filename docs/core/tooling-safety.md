@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-02
+last_validated: 2026-05-04
 ---
 
 # Tooling 合約與安全邊界（Tooling contract & safety boundaries）
