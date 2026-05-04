@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-05
+last_validated: 2026-04-27
 validated_by: wangyuyan-agent
 freshness: ok
 ---
@@ -119,6 +119,10 @@ Layer 2：審批轉發通道（approval channel）
 *（實測：OpenClaw 2026.4.1，Debian VPS；`askFallback: "allow"` 配合 wildcard pattern，任何命令直接執行，不經審批）*  
 **優點：** 零摩擦，agent 可自由執行任何命令。  
 **⚠️ 前提：** 僅適合個人 VPS / 開發機等完全可信的封閉環境；此設定本身不作任何安全過濾。
+
+> **版本提示（2026.4.20+）：**
+> - `security=full` + `ask=off` 的 heredoc / stdin 形式先前可能被誤拒，已於 2026.4.20 修正。
+> - 自 2026.4.21 起，wildcard allowlist（`"pattern": "*"`）不再繞過 owner-only 指令，此為安全收窄，不影響一般命令執行。
 
 ---
 
@@ -258,6 +262,11 @@ pkill -f -HUP openclaw-gateway
 
 # 查看目前 allowlist 命中狀況
 cat ~/.openclaw/exec-approvals.json
+
+# 以 CLI 管理 exec 策略（2026.4.12+）
+openclaw exec-policy show      # 查看當前策略
+openclaw exec-policy preset     # 套用預設策略模板
+openclaw exec-policy set        # 自訂策略參數
 ```
 
 ---
