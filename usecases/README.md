@@ -1,6 +1,6 @@
 ---
-last_validated: 2026-04-07
-validated_by: Chloe
+last_validated: 2026-05-02
+validated_by: tresbot
 ---
 
 # Use Cases
