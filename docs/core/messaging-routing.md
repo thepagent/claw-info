@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-02
+last_validated: 2026-05-04
 ---
 
 # 訊息路由與 Channel Plugins（Messaging routing & channel plugins）
@@ -261,4 +261,3 @@ OpenClaw 會把這些資訊包成「聊天上下文」，用於：
 
 - 是否要提供「路由視覺化」：顯示 inbound → session mapping
 - 是否要提供「安全模式」：禁止跨 chat message，除非 explicit allowlist
-
