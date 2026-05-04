@@ -1,6 +1,6 @@
 ---
-last_validated: 2026-04-02
-validated_by: masami-agent
+last_validated: 2026-05-04
+validated_by: pahud
 ---
 
 # OpenClaw Docs Style Guide（寫作規約）
