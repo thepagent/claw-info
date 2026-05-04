@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-02
+last_validated: 2026-05-04
 ---
 
 # OpenClaw × ACP × Gemini 整合指南
