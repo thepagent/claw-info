@@ -1,6 +1,6 @@
 ---
-last_validated: 2026-04-07
-validated_by: Chloe
+last_validated: 2026-05-04
+validated_by: chaodu-agent
 ---
 
 # Approval-First Workflow — Human-in-the-Loop 審批閘門設計
