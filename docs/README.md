@@ -42,6 +42,9 @@ validated_by: masami-agent
 - **整合**
   - [`webhook.md`](./webhook.md) — Webhook delivery 與事件回傳（適合與外部系統串接）
 
+- **語音與對話**
+  - [`discord-voice.md`](./discord-voice.md) — Discord Voice / Realtime 語音模式完整指南（`/vc` 三種模式、設定、調校、FAQ）
+
 - **How-to / Recipes**
   - [`howto/agent-browser-agentcore.md`](./howto/agent-browser-agentcore.md) — Build agent-browser（PR #397）並連線 AWS Bedrock AgentCore Browser
   - [`howto/aws-iam-minimal-botbedrockrole.md`](./howto/aws-iam-minimal-botbedrockrole.md) — OpenClaw AWS IAM 最小權限配置（BotBedrockRole）
