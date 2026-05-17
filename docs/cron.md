@@ -1,6 +1,6 @@
 ---
-last_validated: 2026-04-02
-validated_by: masami-agent
+last_validated: 2026-05-17
+validated_by: tboydar-agent
 ---
 
 # OpenClaw Cron 調度系統
@@ -10,6 +10,8 @@ validated_by: masami-agent
 OpenClaw Cron 是一個內建的強大定時任務系統，讓您能夠以宣告式方式規劃 Agent 任務的執行時間。
 
 **首次引入版本：** `2026.1.8`
+
+**本文件更新涵蓋：** `2026.5.12` 與 `2026.5.14-beta.2` 新功能 —— `cron.get` API、`isHeartbeat` metadata、Queue Steer 預設行為、`runRetries` 設定
 
 ---
 
@@ -413,6 +415,229 @@ openclaw cron edit <id> --no-deliver
 
 ---
 
+## 進階功能（2026.5.12 / 2026.5.14-beta.2）
+
+### cron.get — 查詢單一 Cron Job
+
+**版本：** `2026.5.14-beta.2`
+
+過去只能透過 `cron list` 查看所有 job，現在可以精確查詢單一 job 的完整設定與狀態。
+
+#### CLI 用法
+
+```bash
+# 查詢特定 job 詳情
+openclaw cron get <job_id>
+
+# 範例輸出
+openclaw cron get 550e8400-e29b-41d4-a716-446655440000
+```
+
+#### Agent Tool 用法
+
+```yaml
+# 在 agent 對話中呼叫
+- tool: cron.get
+  id: "550e8400-e29b-41d4-a716-446655440000"
+```
+
+**回傳欄位：**
+
+| 欄位 | 說明 |
+|------|------|
+| `id` | Job UUID |
+| `name` | Job 名稱 |
+| `schedule` | 排程設定（kind、expr、tz 等） |
+| `payload` | Payload 內容（systemEvent / agentTurn） |
+| `delivery` | 傳送模式設定 |
+| `status` | 目前狀態（pending / running / completed / failed） |
+| `lastRunAtMs` | 上次執行時間戳 |
+| `nextRunAtMs` | 下次排程時間戳 |
+| `runCount` | 歷史執行次數 |
+
+**使用場景：**
+- 在 heartbeat 中動態檢查特定 cron job 是否健康
+- 腳本中根據 job 狀態做條件判斷
+- 除錯時快速查看單一 job 設定，避免 `cron list` 輸出過長
+
+---
+
+### isHeartbeat Metadata — 區分排程觸發與一般對話
+
+**版本：** `2026.5.12`
+
+Gateway 現在會在 agent event payload 上暴露 `isHeartbeat` metadata，讓 agent 知道自己是在回應 heartbeat/cron 觸發，還是一般使用者訊息。
+
+#### 行為說明
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    觸發來源判斷                              │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│   使用者發訊息 ──▶ isHeartbeat = false                      │
+│                                                             │
+│   Cron job (systemEvent) ──▶ isHeartbeat = true            │
+│                                                             │
+│   Heartbeat 輪詢 ──▶ isHeartbeat = true                    │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 使用場景
+
+**1. UI 標示**
+- 前端可根據 `isHeartbeat` 在訊息旁顯示「🤖 自動」標籤，讓使用者知道這是排程產生的內容
+
+**2. 統計排除**
+- 分析 agent 使用量時，可過濾 `isHeartbeat=true` 的回合，避免 cron 執行扭曲真實互動數據
+
+**3. 調試識別**
+- 日誌中快速區分「使用者主動觸發」與「系統自動觸發」，縮短排查時間
+
+#### 設定範例
+
+```yaml
+# 在 agent 的 system prompt 中參考
+agents:
+  main:
+    systemPrompt: |
+      你是一個個人助理。
+      
+      當 isHeartbeat=true 時：
+      - 簡潔回應，避免冗長問候
+      - 優先執行檢查與報告任務
+      - 不要主動發問
+```
+
+---
+
+### Queue Steer — 訊息路由預設行為
+
+**版本：** `2026.5.12`
+
+過去 mid-turn prompt（回合進行中收到的新訊息）預設進入 queue，等待目前回合結束後才處理。現在預設行為改為 **steer** —— 直接導入正在執行的回合。
+
+#### 行為比較
+
+| 模式 | 舊行為 | 新預設（2026.5.12+） |
+|------|--------|---------------------|
+| `/queue steer` | 需明確指定 | ✅ 預設行為 |
+| `/queue followup` | 預設行為 | 保留給需要 queue 的用戶 |
+| `/queue collect` | 需明確指定 | 保留給需要 queue 的用戶 |
+
+#### 實際影響
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                  回合進行中收到新訊息                        │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│   舊行為（2026.5.12 之前）                                  │
+│   ┌─────────┐    ┌─────────┐    ┌─────────┐              │
+│   │ 訊息 A  │───▶│ 訊息 B  │───▶│ 訊息 C  │  排隊等待     │
+│   └─────────┘    └─────────┘    └─────────┘              │
+│                                                             │
+│   新行為（2026.5.12+）                                      │
+│   ┌─────────┐                                               │
+│   │ 訊息 A  │◀── 訊息 B 直接 steer 進入目前回合            │
+│   └─────────┘    （Agent 可即時回應或調整方向）             │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 例外情況
+
+當 steering 不可用時（例如：回合已進入無法中斷的階段），`/steer` 會自動降級為 **normal prompt**，不會造成錯誤或遺失訊息。
+
+#### 對 Cron 的影響
+
+- Cron `systemEvent` 觸發的回合若收到使用者新訊息，新訊息會直接 steer 進入該回合
+- 避免「使用者發訊息但 agent 沒反應」的情況（因為訊息卡在 queue）
+- 提升即時互動體驗
+
+#### 明確使用 Queue 的情境
+
+若你希望訊息排隊而非 steer，仍可使用：
+
+```bash
+# 讓後續訊息排隊等待
+/queue followup
+
+# 收集多則訊息後批次處理
+/queue collect
+```
+
+---
+
+### runRetries — 嵌入式 Runner 重試限制
+
+**版本：** `2026.5.14-beta.2`
+
+新增 `runRetries` 設定，用於控制 embedded Pi runner 的重試次數上限。
+
+#### 設定方式
+
+**全域預設：**
+
+```yaml
+agents:
+  defaults:
+    runRetries: 3  # 預設重試 3 次
+```
+
+**個別 agent 覆寫：**
+
+```yaml
+agents:
+  list:
+    - id: backup-agent
+      runRetries: 5  # 備份任務允許較多重試
+    - id: quick-check
+      runRetries: 1  # 快速檢查只重試 1 次
+```
+
+#### 運作機制
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    runRetries 流程                           │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│   1. Cron job 觸發 agentTurn                                │
+│        │                                                    │
+│        ▼                                                    │
+│   2. Runner 開始執行                                        │
+│        │                                                    │
+│        ▼ 失敗                                               │
+│   3. 檢查 runRetries                                        │
+│        │                                                    │
+│        ├── 未達上限 ──▶ 自動重試                             │
+│        └── 已達上限 ──▶ 標記 failed，觸發 delivery           │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 使用建議
+
+| 任務類型 | 建議 runRetries | 理由 |
+|---------|----------------|------|
+| 網路依賴（API 呼叫） | 3-5 | 網路瞬斷常見，多給幾次機會 |
+| 本地檔案操作 | 1-2 | 本地失敗通常不是暫時性的 |
+| 重要備份 | 5 | 備份失敗代價高，盡量重試 |
+| 快速狀態檢查 | 1 | 失敗就下次週期再檢查 |
+
+#### 與 Cron 內建重試的關係
+
+Cron 本身已有「失敗後自動重試 3 次」的機制（見「錯誤處理」章節）。`runRetries` 是**更底層的 runner 重試**，兩者獨立運作：
+
+1. **Runner 層（runRetries）**：單次 agentTurn 執行失敗時，runner 內部重試
+2. **Cron 層**：整個 cron job（含 runner）失敗時，排程器重試
+
+> 實際總重試次數 = runRetries × Cron 層重試次數。設定時注意避免過多重試導致 token 浪費。
+
+---
+
 ## 已知問題（Open Issues）
 
 ### 🔴 Bugs
@@ -486,6 +711,7 @@ openclaw cron edit <id> --message "Run bash /path/to/script.sh and nothing else"
 
 ## 更新紀錄
 
+- **2026-05-17**：新增進階功能章節 —— `cron.get` API、`isHeartbeat` metadata、Queue Steer 預設行為、`runRetries` 設定（2026.5.12 / 2026.5.14-beta.2）
 - **2026-02-24**：新增 Q5（exec 批准問題）、Q6（delivery 亂送 TG）常見問題
 - **2026-02-23**：新增「OS cron 與 OpenClaw cron 比較」章節
 - **2026-02-17**：新增「已知問題」章節
@@ -493,4 +719,4 @@ openclaw cron edit <id> --message "Run bash /path/to/script.sh and nothing else"
 
 ---
 
-*最後更新：2026-02-23*
+*最後更新：2026-05-17*
