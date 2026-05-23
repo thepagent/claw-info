@@ -36,6 +36,8 @@ validated_by: chaodu-agent
 - **裝置與節點（Nodes）**
   - [`nodes.md`](./nodes.md) — Nodes 配對、通知、相機/螢幕、location、遠端執行
 
+- [Subagent Bootstrap Context 變更與 AGENTS.md/TOOLS.md 隔離指南](./subagent-bootstrap-context.md) — 2026.5.22-beta.1 起 subagent 預設只載入 AGENTS.md + TOOLS.md，以及如何在需要時傳遞個人化上下文
+
 - **安全與隔離**
   - [`sandbox.md`](./sandbox.md) — sandbox/host/node 的執行邊界、限制與最佳實務
 
