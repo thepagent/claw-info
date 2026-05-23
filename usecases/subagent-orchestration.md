@@ -232,6 +232,18 @@ Agent 回覆：
 
 ---
 
+### 5. Bootstrap Context 考量（2026.5.22-beta.1+）
+
+委派 sub-agent 時，預設只會載入 `AGENTS.md` 與 `TOOLS.md`。如果任務需要主人的個人資訊或長期記憶，必須**明確傳遞**：
+
+- **安全委派**（分析公開 repo、寫技術文件）：不需要傳入個人化上下文，讓 sub-agent 保持客觀
+- **需要個人化**（回覆 email、寫週報）：透過 `attachments` 傳入 `USER.md` 摘要，或讓 sub-agent 使用 `memory_search` 按需查詢
+- **連續對話**：使用 `context: "fork"` 讓 sub-agent 繼承當前對話脈絡，但這不會自動載入 `MEMORY.md`
+
+詳細說明參見 [`docs/subagent-bootstrap-context.md`](../docs/subagent-bootstrap-context.md)。
+
+---
+
 ## Anti-Patterns
 
 ### ❌ 串列等待多個 sub-agent
