@@ -16,6 +16,7 @@ validated_by: chaodu-agent
 - [`start.md`](./start.md) — 最小可行 Start / Onboarding（daemon、channel、pairing、驗證清單）
 - [`cli.md`](./cli.md) — CLI 指令速查
 - [`troubleshooting.md`](./troubleshooting.md) — 常見故障排除（不回覆/收不到訊息/browser/cron/SSO…）
+- [`context.md`](./context.md) — /context 指令群與 context 視覺化診斷
 
 ## 快速導覽
 
@@ -61,6 +62,10 @@ validated_by: chaodu-agent
   - `messaging-routing.md`
   - `skills-system.md`
   - `memory-strategy.md`
+
+## Context 診斷
+
+- [`context.md`](./context.md) — /context map 視覺化、compaction 機制、Control UI indicator
 
 ## 貢獻方式（簡要）
 
