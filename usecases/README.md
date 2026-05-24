@@ -1,6 +1,6 @@
 ---
-last_validated: 2026-04-07
-validated_by: Chloe
+last_validated: 2026-05-25
+validated_by: claw-info-docs-contrib
 ---
 
 # Use Cases
@@ -20,3 +20,7 @@ Each file covers a specific use case with:
 - Use Traditional Chinese (zh-TW)
 - Use ASCII solid-line flowcharts (not mermaid)
 - Include actual tested configurations
+
+## Index
+
+- [multimedia-generation-workflow.md](multimedia-generation-workflow.md) — 多媒體生成整合工作流程（Image / Video / Music）
