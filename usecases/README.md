@@ -1,6 +1,6 @@
 ---
-last_validated: 2026-05-02
-validated_by: tresbot
+last_validated: 2026-05-25
+validated_by: tboydar-agent
 ---
 
 # Use Cases
@@ -14,6 +14,12 @@ Each file covers a specific use case with:
 - Configuration examples
 - ASCII flowcharts
 - Lessons learned
+
+## Index
+
+| 檔案 | 主題 | 說明 |
+|------|------|------|
+| [multimedia-generation-workflow.md](./multimedia-generation-workflow.md) | 多媒體生成整合 | image_generate + video_generate + music_generate 協同工作流程 |
 
 ## Contributing
 
